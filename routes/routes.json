@@ -1,6 +1,6 @@
 {
  "dongle": "59fa1d41318b87d3",
- "generated": "2026-10-20 19:22 PDT",
+ "generated": "2026-10-20 21:14 PDT",
  "routes": [
   {
    "route": "59fa1d41318b87d3|00000001--97a0ab2a9f",
@@ -11,7 +11,9 @@
    "longitudinal": "stock-capable-unused",
    "cruise_engaged_pct": 0,
    "rlog_segments": "",
-   "tags": [],
+   "tags": [
+    "sunnypilot"
+   ],
    "notes": ""
   },
   {
@@ -23,7 +25,9 @@
    "longitudinal": "openpilot-long",
    "cruise_engaged_pct": 0,
    "rlog_segments": "",
-   "tags": [],
+   "tags": [
+    "sunnypilot"
+   ],
    "notes": ""
   },
   {
@@ -35,7 +39,9 @@
    "longitudinal": "openpilot-long",
    "cruise_engaged_pct": 27,
    "rlog_segments": "",
-   "tags": [],
+   "tags": [
+    "sunnypilot"
+   ],
    "notes": ""
   },
   {
@@ -47,7 +53,9 @@
    "longitudinal": "stock-capable-unused",
    "cruise_engaged_pct": 0,
    "rlog_segments": "",
-   "tags": [],
+   "tags": [
+    "sunnypilot"
+   ],
    "notes": ""
   },
   {
@@ -59,7 +67,9 @@
    "longitudinal": "openpilot-long",
    "cruise_engaged_pct": 0,
    "rlog_segments": "",
-   "tags": [],
+   "tags": [
+    "sunnypilot"
+   ],
    "notes": ""
   },
   {
@@ -71,7 +81,9 @@
    "longitudinal": "openpilot-long",
    "cruise_engaged_pct": 0,
    "rlog_segments": "",
-   "tags": [],
+   "tags": [
+    "sunnypilot"
+   ],
    "notes": ""
   },
   {
@@ -83,7 +95,9 @@
    "longitudinal": "openpilot-long",
    "cruise_engaged_pct": 0,
    "rlog_segments": "",
-   "tags": [],
+   "tags": [
+    "sunnypilot"
+   ],
    "notes": ""
   },
   {
@@ -95,8 +109,11 @@
    "longitudinal": "openpilot-long",
    "cruise_engaged_pct": 0,
    "rlog_segments": "",
-   "tags": [],
-   "notes": ""
+   "tags": [
+    "sunnypilot",
+    "near-miss"
+   ],
+   "notes": "sunnypilot release-mici, camera-only long, HyundaiLongitudinalTuning Off, experimental mode on, standard. Near-miss ~271 s (seg 4): lead braked 19->0 mph, camera aLeadK only -0.3..-1.0, openpilot reached -1.8 m/s^2, driver braked at 9 m closing 5 m/s."
   },
   {
    "route": "59fa1d41318b87d3|00000010--420bf4cd99",
@@ -107,7 +124,9 @@
    "longitudinal": "stock-capable-unused",
    "cruise_engaged_pct": 0,
    "rlog_segments": "",
-   "tags": [],
+   "tags": [
+    "sunnypilot"
+   ],
    "notes": ""
   },
   {
@@ -119,7 +138,9 @@
    "longitudinal": "stock-capable-unused",
    "cruise_engaged_pct": 0,
    "rlog_segments": "",
-   "tags": [],
+   "tags": [
+    "sunnypilot"
+   ],
    "notes": ""
   },
   {
@@ -131,7 +152,9 @@
    "longitudinal": "stock-acc",
    "cruise_engaged_pct": 7,
    "rlog_segments": "",
-   "tags": [],
+   "tags": [
+    "sunnypilot"
+   ],
    "notes": ""
   },
   {
@@ -143,7 +166,9 @@
    "longitudinal": "stock-capable-unused",
    "cruise_engaged_pct": 0,
    "rlog_segments": "",
-   "tags": [],
+   "tags": [
+    "sunnypilot"
+   ],
    "notes": ""
   },
   {
@@ -155,7 +180,9 @@
    "longitudinal": "openpilot-long",
    "cruise_engaged_pct": 50,
    "rlog_segments": "",
-   "tags": [],
+   "tags": [
+    "sunnypilot"
+   ],
    "notes": ""
   },
   {
@@ -167,7 +194,9 @@
    "longitudinal": "openpilot-long",
    "cruise_engaged_pct": 0,
    "rlog_segments": "",
-   "tags": [],
+   "tags": [
+    "sunnypilot"
+   ],
    "notes": ""
   },
   {
@@ -179,7 +208,9 @@
    "longitudinal": "openpilot-long",
    "cruise_engaged_pct": 0,
    "rlog_segments": "",
-   "tags": [],
+   "tags": [
+    "sunnypilot"
+   ],
    "notes": ""
   },
   {
@@ -191,7 +222,9 @@
    "longitudinal": "openpilot-long",
    "cruise_engaged_pct": 70,
    "rlog_segments": "",
-   "tags": [],
+   "tags": [
+    "sunnypilot"
+   ],
    "notes": ""
   },
   {
@@ -203,8 +236,11 @@
    "longitudinal": "openpilot-long",
    "cruise_engaged_pct": 0,
    "rlog_segments": "",
-   "tags": [],
-   "notes": ""
+   "tags": [
+    "sunnypilot",
+    "near-miss"
+   ],
+   "notes": "sunnypilot release-mici, camera-only long, tuning Off, experimental off, standard. Close call ~241 s (seg 4): lead braked 13->0 mph, openpilot -2.3 m/s^2, driver braked at 3.9 m."
   },
   {
    "route": "59fa1d41318b87d3|0000001c--202f4bdf5d",
@@ -215,7 +251,9 @@
    "longitudinal": "openpilot-long",
    "cruise_engaged_pct": 0,
    "rlog_segments": "",
-   "tags": [],
+   "tags": [
+    "sunnypilot"
+   ],
    "notes": ""
   },
   {
@@ -227,7 +265,9 @@
    "longitudinal": "openpilot-long",
    "cruise_engaged_pct": 0,
    "rlog_segments": "",
-   "tags": [],
+   "tags": [
+    "sunnypilot"
+   ],
    "notes": ""
   },
   {

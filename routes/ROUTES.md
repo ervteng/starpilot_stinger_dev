@@ -23,6 +23,8 @@ Every drive from the Stinger (dongle `59fa1d41318b87d3`) from 2026-09-17 on, gen
 
 | Route | Start (PDT) | Segs | Build | Longitudinal | rlogs | Notes |
 |---|---|---|---|---|---|---|
+| `0000000f--3473db42b0` | 2026-09-20 11:58 | 14 | release-mici `6a17f75c` | openpilot-long (0%) | - | sunnypilot release-mici, camera-only long, HyundaiLongitudinalTuning Off, experimental mode on, standard. Near-miss ~271 s (seg 4): lead braked 19->0 mph, camera aLeadK only -0.3..-1.0, openpilot reached -1.8 m/s^2, driver braked at 9 m closing 5 m/s. |
+| `0000001b--e606a33a74` | 2026-09-24 09:16 | 48 | release-mici `6a17f75c` | openpilot-long (0%) | - | sunnypilot release-mici, camera-only long, tuning Off, experimental off, standard. Close call ~241 s (seg 4): lead braked 13->0 mph, openpilot -2.3 m/s^2, driver braked at 3.9 m. |
 | `00000002--b47e891d5f` | 2026-09-25 12:52 | 11 | StarPilot `2a12dbd0` | openpilot-long (30%) | 0-10 | Auto Stop steering-fault root cause: rlog segs 9-10 show LVR12 CF_Lvr_IsgState -> MDPS ToiUnavail -> steerTempUnavailableSilent. |
 | `00000003--57168e519c` | 2026-09-25 13:04 | 18 | StarPilot `2a12dbd0` | openpilot-long (59%) | 0 | rlog seg 0: 0x544 Navi_HU on bus 0 within 0.03 s of startup. Moving steerTempUnavailable soft-disables in segs 8 and 15 (not yet investigated). |
 | `00000004--d9c8338110` | 2026-09-25 18:15 | 53 | StarPilot `2a12dbd0` | openpilot-long (82%) | 0 | rlog seg 0: 0x544 on bus 0 at 0.12 s; 0x391 (LFA button) and 0x53E (8 bytes, not LKAS12) present. |
