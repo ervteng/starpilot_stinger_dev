@@ -3,7 +3,7 @@
 
 Feeds the factory target (SCC12 aReqRaw) to each tune as openpilot's command, at the 100 Hz CarController frame rate,
 and compares the output with what the factory SCC sent at the same time: SCC12 aReqValue and SCC14 JerkLowerLimit.
-The tunes shape the braking side only (rising accel and urgent braking pass through, the upper jerk is today's), so
+B shapes the braking side only (C smooths both sides like the Ioniq 6), so
 the fit and the ranking are on the braking side: the lower jerk and the "braking cmd" (aReqRaw < -0.1) and "falling
 ramp" (factory aReqValue still above aReqRaw) groups; "rising ramp" is shown for information.
 The tunes are the real functions from --starpilot's checkout (branch stinger-stock-tune); only the wiring around
@@ -11,8 +11,9 @@ them is replicated here from CarController (see TuneB / TuneC, which mirror crea
 CarController.update):
   B  get_hyundai_canfd_scc_jerk_limits + shape_hyundai_canfd_scc_accel(kia_stinger_2022_tune=True, jerk_upper,
      lead_visible, lead_distance), every 2nd frame (50 Hz), accel_last = last accel sent.
-  C  update_ioniq_6_longitudinal_tuning(kia_stinger_2022=True; dynamic lower jerk capped at 2.5, no lead) every 5th frame, smoothed only while
-     urgent threshold < accel < the smoothed value, else the command passes through and the state follows it.
+  C  the plain Ioniq 6 tune: update_ioniq_6_longitudinal_tuning (defaults) every 5th frame, upstream smoothing rule
+     (smoothed when accel >= the smoothed value, or launch / stopping), else the get_canfd_scc_decel_step fallback;
+     SCC14 jerks from the tuning state while smoothed, today's otherwise.
 "today" is what openpilot sends without a tune (aReqValue = aReqRaw, jerk 3.0 / 5.0). Inputs per frame: accel =
 SCC12 aReqRaw, enabled = SCC12 ACCMode == 1 with no gas/brake pedal, stopping = SCC12 StopReq (long control state
 stopping, else pid), lead = SCC11 ACC_ObjStatus / ACC_ObjDist, v_ego = carState.vEgo, a_ego = carState.aEgo. Comfort
@@ -79,39 +80,46 @@ class TuneB:
 
 
 class TuneC:
-  """Variant C wiring from the egmp block of CarController.update (100 Hz frames, tune every 5th) and create_can_msgs."""
+  """Variant C wiring: the plain Ioniq 6 egmp block of CarController.update (100 Hz frames, tune every 5th, upstream smoothing
+  rule and get_canfd_scc_decel_step fallback) and the SCC14 jerks of create_can_msgs (50 Hz, accel_last = last accel sent)."""
   def __init__(self):
+    import numpy as np
     from opendbc.car import structs
     from opendbc.car.hyundai import carcontroller as cc
-    from openpilot.selfdrive.controls.lib import longitudinal_vehicle_tunes as lvt
-    self.cc, self.lvt, self.LCS = cc, lvt, structs.CarControl.Actuators.LongControlState
+    self.np, self.cc = np, cc
+    self.LCS = structs.CarControl.Actuators.LongControlState
     self.state = cc.Ioniq6LongitudinalTuningState()
+    self.accel_last = 0.0
+    self.out = (0.0, 3.0, 5.0)
 
   def step(self, f, accel_cmd, v, a, stopping, enabled, override, lead, dist):
+    cc = self.cc
     lcs = self.LCS.stopping if stopping else self.LCS.pid
-    st, lvt = self.state, self.lvt
-    use = True
-    if not enabled or override:
-      self.state = st = self.cc.reset_egmp_longitudinal_tuning(st)
-      use = False
-    elif f % 5 == 0:
-      self.state = st = self.cc.update_ioniq_6_longitudinal_tuning(st, accel_cmd, v, a, lcs, True, kia_stinger_2022=True)
+    st = self.state
+    use = enabled and not override  # gate: long control state off (disengaged / pedal) skips the whole block
     accel, jerk, lower = accel_cmd, today_upper(stopping), TODAY["jerk_lower"]
     if use:
-      if lvt.KIA_STINGER_2022_SCC_URGENT_ACCEL < accel_cmd < st.actual_accel:
+      if f % 5 == 0:
+        self.state = st = cc.update_ioniq_6_longitudinal_tuning(st, accel_cmd, v, a, lcs, True)
+      smoothed = accel_cmd >= st.actual_accel or st.launch_active or st.stopping
+      if smoothed:
         accel = st.actual_accel
-      else:  # rising or urgent: the command passes through and the state follows it
-        st.desired_accel = st.actual_accel = st.accel_last = accel_cmd
-        st.jerk_upper = lvt.KIA_STINGER_2022_SCC_JERK_UPPER if lcs == self.LCS.pid else 1.0
-        if accel_cmd <= lvt.KIA_STINGER_2022_SCC_URGENT_ACCEL:
-          st.jerk_lower = lvt.KIA_STINGER_2022_SCC_URGENT_JERK_LOWER
-        elif st.jerk_lower <= 0.0:
-          st.jerk_lower = lvt.KIA_STINGER_2022_SCC_JERK_LOWER
+        stopping = st.stopping
+      else:
+        step = cc.get_canfd_scc_decel_step(STINGER)
+        accel = float(self.np.clip(accel_cmd, self.accel_last - step, self.accel_last + cc.IONIQ_6_CANFD_SCC_ACCEL_STEP))
+        st.desired_accel = accel_cmd
+        st.actual_accel = st.accel_last = accel
+        st.jerk_upper = 3.0
+        st.jerk_lower = 5.0 if enabled else 1.0
         st.launch_active = False
         st.stopping = stopping
         st.long_control_state_last = lcs
-      jerk, lower = st.jerk_upper, st.jerk_lower
-    return accel, jerk, lower
+      jerk, lower = (st.jerk_upper, st.jerk_lower) if smoothed else (today_upper(stopping), TODAY["jerk_lower"])
+    if f % 2 == 0:
+      self.accel_last = accel
+      self.out = (accel, jerk, lower)
+    return self.out
 
 
 def make_tune(name):

@@ -3,8 +3,8 @@
 
 Replays carControl (actuators.accel, longControlState, longActive, cruiseControl.override) with carState (vEgo, aEgo)
 and radarState leadOne (status, dRel) through three tunes from --starpilot's checkout (branch stinger-stock-tune):
-"A" = today's openpilot (accel passed through), "B" (GV70 style jerk-limited shaper, 50 Hz) and "C" (EV6/Ioniq style
-smoothing, 20 Hz). The wiring around the real tune functions is the one in stock_mimic_check.py (TuneB / TuneC,
+"A" = today's openpilot (accel passed through), "B" (GV70 style jerk-limited shaper, 50 Hz) and "C" (the plain Ioniq 6 tune,
+smoothing both sides, 20 Hz). The wiring around the real tune functions is the one in stock_mimic_check.py (TuneB / TuneC,
 replicated from CarController). qlog carControl is ~10 Hz, so samples are held to rebuild the 100 Hz loop. The tunes
 run over the whole timeline (seeded with the first command), so they are in their normal state when braking starts.
 
@@ -21,7 +21,8 @@ where the ramps keep braking after the command eases. Per tune:
 Default mode: the hardest braking episode in the given segments (the window also gets loaded one segment either side).
 --scan: every episode in all rlogs of the given routes, per tune the median / p90 / worst extra distance, the worst
 delay to -2.0, and the worst episodes.
-B and C shape the braking side only: a rising command and urgent braking (accel <= -1.0) pass through.
+B shapes the braking side only: a rising command and urgent braking (accel <= -1.0) pass through. C is the Ioniq 6 tune:
+rising accel is smoothed, and braking harder than the smoothed value skips smoothing (get_canfd_scc_decel_step fallback).
 
 Usage: tune_safety_replay.py ROUTE SEG [SEG ...] KIND [--starpilot DIR]       (KIND: rlog or qlog)
        tune_safety_replay.py --scan ROUTE [ROUTE ...] [--starpilot DIR] [--threshold -1.0]
@@ -86,7 +87,8 @@ def simulate(chunk):
   first = chunk[0][ACC]
   tunes = [TuneB(), TuneC()]
   tunes[0].accel_last = first; tunes[0].out = (first, 3.0, 5.0)
-  tunes[1].state.desired_accel = tunes[1].state.actual_accel = tunes[1].state.accel_last = first
+  tunes[1].state.desired_accel = tunes[1].state.actual_accel = tunes[1].state.accel_last = tunes[1].accel_last = first
+  tunes[1].out = (first, 3.0, 5.0)
   out = np.zeros((3, len(chunk))); out[0] = [r[ACC] for r in chunk]
   stopping_state = int(_lcs_enum().stopping)
   for k, r in enumerate(chunk):
@@ -189,7 +191,7 @@ def summary(eps, threshold):
     d2 = [e[4][name]["delay"][-2.0] for e in eps if e[4][name]["delay"][-2.0] is not None]
     worst = max(d2) if d2 else None
     print(f"   {name:5s} {np.median(ex):8.2f} {np.percentile(ex, 90):8.2f} {ex.max():8.2f} {int((ex > 1).sum()):6d} "
-          f"{fmt_delay(worst):>17s} {len(d2):>23d}")
+          f"{fmt_delay(worst):>17s}{"" if worst is None or np.isinf(worst) else " (%.4f)" % worst} {len(d2):>23d}")
 
 
 def run_scan(route, threshold):
