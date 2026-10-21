@@ -77,6 +77,20 @@ Run with the venv's Python from `analysis/`:
 | `stop_report.py ROUTE [--segments 1,5]` | per openpilot stop: entry speed, radar vs model gap, double stop, hold creep and brake sent, stopped-lead vLead/aLeadK artifacts |
 | `stop_window.py LOG START END` | timeline: speed, long state, accel commanded vs sent, planner, radar lead, model lead |
 | `radar_check.py RLOG [--radar-interface PATH]` | runs StarPilot's Stinger radar decoder over raw CAN: rates, triplet outcomes, flicker, match vs `liveTracks` |
+| `drive_profile.py ROUTE...` | per drive: distance, top speed, openpilot long vs stock ACC, engaged %, stops, notable alerts |
+| `alerts.py ROUTE... [--match REGEX]` | alert changes (default steering-unavailable and FCW) with car state and route time |
+| `auto_stop.py ROUTE...` (rlog) | Auto Stop events: engaged/brake, MDPS unavailable frames, whether carState reported a steering fault |
+| `speed_limit.py ROUTE...` | dashboard speed limit presence, whether SLC used it, map agreement, SLC source and settings |
+| `highway_brakes.py ROUTE... [--at T]` | openpilot braking episodes above 45 mph with the likely cause; `--at` prints a lead timeline |
+| `lead_braking.py --group NAME ROUTE... --group ...` | ego vs lead decel and gap shrink when the lead brakes, e.g. stock ACC vs openpilot |
+| `brake_blend.py ROUTE...` (rlog) | brake light and throttle vs requested accel: where the car switches from coasting to braking |
+| `radar_vs_factory.py ROUTE... [--starpilot DIR] [--fine]` (rlog, stock ACC) | decoder vs the factory SCC11 lead: distance, relative speed and lateral by range and ego speed |
+| `radar_range_rate.py ROUTE... [--starpilot DIR]` (rlog) | decoder relative speed vs the radar's own range rate on centred tracks (any drive) |
+| `radar_vs_vision.py ROUTE...` (rlog) | radar lead vs camera lead by range, near-range offset, low-speed lead source |
+
+Routes can be short names (`0000000e--5ebf4636a1`); the dongle defaults to `$STINGER_DONGLE` (59fa1d41318b87d3).
+Scripts that decode CAN or run the radar decoder take opendbc from the StarPilot checkout (`--starpilot` to pick
+one, e.g. a worktree of another branch to compare decoder versions).
 
 ```bash
 cd analysis
@@ -84,4 +98,8 @@ P=/home/user/starpilot-dev/venv/bin/python
 $P route_scan.py "59fa1d41318b87d3|00000006--38cf647ea8"
 $P stop_report.py "59fa1d41318b87d3|00000006--38cf647ea8"
 $P stop_window.py /home/user/starpilot-dev/logs/59fa1d41318b87d3_00000006--38cf647ea8--5--rlog.zst 18 28
+$P auto_stop.py 0000000d--5e0d1d244b
+$P highway_brakes.py 0000000e--5ebf4636a1 --at 712
+$P lead_braking.py --group stock 00000028--297af64c9c 00000029--b3c2c13819 --group openpilot 0000000e--5ebf4636a1
+$P radar_vs_factory.py 00000034--5f8605e608 --fine
 ```

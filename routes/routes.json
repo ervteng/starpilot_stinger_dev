@@ -1107,7 +1107,7 @@
     "highway",
     "radar"
    ],
-   "notes": "stinger-combined 9387109: highway traffic jam hard brake ~708 s (seg 11), Auto Stop seg 3, radar vs vision offsets, out-of-sample speed-bias check."
+   "notes": "stinger-combined 9387109: highway traffic jam hard brake ~712 s (seg 11), Auto Stop seg 3, radar vs vision offsets, out-of-sample speed-bias check."
   }
  ]
 }
