@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Does a longitudinal tune delay urgent braking? Replay logged openpilot braking through the tunes.
+"""Do the Stinger stock-like tunes delay urgent braking? Replay logged openpilot braking through A, B and C.
 
-Replays carControl (actuators.accel, longControlState, longActive, cruiseControl.override) with carState (vEgo,
-aEgo) and radarState leadOne (status, dRel) through three tunes from --starpilot's opendbc: "stock-like"
-(update_kia_stinger_longitudinal_tuning, every frame) and the sunnypilot-style LongitudinalTuner in "dynamic" and
-"predictive" mode (every 5th frame). qlog carControl is ~10 Hz, so samples are held to rebuild the 100 Hz loop.
-The tunes run over the whole timeline (seeded with the first command), so they are in their normal state when
-braking starts.
+Replays carControl (actuators.accel, longControlState, longActive, cruiseControl.override) with carState (vEgo, aEgo)
+and radarState leadOne (status, dRel) through three tunes from --starpilot's checkout (branch stinger-stock-tune):
+"A" = today's openpilot (accel passed through), "B" (GV70 style jerk-limited shaper, 50 Hz) and "C" (EV6/Ioniq style
+smoothing, 20 Hz). The wiring around the real tune functions is the one in stock_mimic_check.py (TuneB / TuneC,
+replicated from CarController). qlog carControl is ~10 Hz, so samples are held to rebuild the 100 Hz loop. The tunes
+run over the whole timeline (seeded with the first command), so they are in their normal state when braking starts.
 
 A braking episode is a run of longActive samples with accel < --threshold (default -1.0), merged across gaps up to
 1 s, at least 0.3 s long. The window runs from 0.5 s before the episode to the moment the tuned accel has caught up
@@ -21,6 +21,7 @@ where the ramps keep braking after the command eases. Per tune:
 Default mode: the hardest braking episode in the given segments (the window also gets loaded one segment either side).
 --scan: every episode in all rlogs of the given routes, per tune the median / p90 / worst extra distance, the worst
 delay to -2.0, and the worst episodes.
+B and C shape the braking side only: a rising command and urgent braking (accel <= -1.0) pass through.
 
 Usage: tune_safety_replay.py ROUTE SEG [SEG ...] KIND [--starpilot DIR]       (KIND: rlog or qlog)
        tune_safety_replay.py --scan ROUTE [ROUTE ...] [--starpilot DIR] [--threshold -1.0]
@@ -31,8 +32,9 @@ import sys
 import numpy as np
 
 from logs import add_starpilot_path, pmap, seg_num, segment_files, short, sorted_events
+from stock_mimic_check import TuneB, TuneC
 
-TUNES = ("stock-like", "dynamic", "predictive")
+TUNES = ("A", "B", "C")
 DT = 0.01
 MAX_HOLD = 0.5  # s: longer gaps in the log break the timeline instead of being held
 MERGE_GAP = 1.0
@@ -41,6 +43,11 @@ PRE, POST = 0.5, 2.0
 CATCH_UP = 0.05  # m/s^2: tuned within this of the command counts as caught up
 # row: t, seg, long_active, accel, long_control_state (int), override, v, a_ego, lead_status, lead_dist
 T, SEG, ACTIVE, ACC, LCS, OVR, V, A, LS, LD = range(10)
+
+
+def _lcs_enum():
+  from opendbc.car import structs
+  return structs.CarControl.Actuators.LongControlState
 
 
 def load(path):
@@ -76,25 +83,16 @@ def densify(rows):
 
 def simulate(chunk):
   """Tuned accel per row for each tune, shape (3, len(chunk))."""
-  from types import SimpleNamespace
-  from opendbc.car.hyundai.carcontroller import KiaStingerLongitudinalTuningState, update_kia_stinger_longitudinal_tuning
-  from opendbc.car.hyundai.longitudinal_tuning import LongitudinalTuner, LongitudinalTuningMode, UPDATE_FRAMES
-
   first = chunk[0][ACC]
-  stock = KiaStingerLongitudinalTuningState(accel_last=first, actual_accel=first)
-  tuners = [LongitudinalTuner(m, radar_available=True) for m in (LongitudinalTuningMode.DYNAMIC, LongitudinalTuningMode.PREDICTIVE)]
-  for t in tuners:
-    t.accel_last = t.actual_accel = first
-  out = np.zeros((3, len(chunk)))
+  tunes = [TuneB(), TuneC()]
+  tunes[0].accel_last = first; tunes[0].out = (first, 3.0, 5.0)
+  tunes[1].state.desired_accel = tunes[1].state.actual_accel = tunes[1].state.accel_last = first
+  out = np.zeros((3, len(chunk))); out[0] = [r[ACC] for r in chunk]
+  stopping_state = int(_lcs_enum().stopping)
   for k, r in enumerate(chunk):
-    lcs = r[LCS]
-    update_kia_stinger_longitudinal_tuning(stock, r[ACC], r[V], lcs, bool(r[ACTIVE]), bool(r[OVR]), bool(r[LS]), r[LD])
-    out[0, k] = stock.actual_accel
-    if k % UPDATE_FRAMES == 0:
-      cc = SimpleNamespace(longActive=bool(r[ACTIVE]), actuators=SimpleNamespace(accel=r[ACC], longControlState=lcs))
-      for t in tuners:
-        t.update(cc, r[V], r[A])
-    out[1, k], out[2, k] = tuners[0].actual_accel, tuners[1].actual_accel
+    args = (k, r[ACC], r[V], r[A], r[LCS] == stopping_state, bool(r[ACTIVE]), bool(r[OVR]), bool(r[LS]), r[LD])
+    for i, t in enumerate(tunes):
+      out[i + 1, k] = t.step(*args)[0]
   return out
 
 
@@ -176,8 +174,6 @@ def episodes_of(path_rows, threshold):
   out = []
   for chunk in densify(path_rows):
     eps = find_episodes(chunk, threshold)
-    if not eps:
-      continue
     tuned = simulate(chunk)
     for a, b in eps:
       res, _ = evaluate(chunk, tuned, a, b)
@@ -186,28 +182,33 @@ def episodes_of(path_rows, threshold):
   return out
 
 
-def run_scan(route, threshold):
-  files = segment_files(route, "rlog")
-  if not files:
-    print(f"{short(route)}: no rlogs"); return
-  rows = sorted(r for rs in pmap(load, files) for r in rs)
-  eps = episodes_of(rows, threshold)
-  seg0 = {s: min(r[T] for r in rows if r[SEG] == s) for s in {r[SEG] for r in rows}}
-  print(f"\n== {short(route)}: {len(files)} rlogs, {len(eps)} braking episodes below {threshold} m/s^2")
-  if not eps:
-    return
-  print(f"   {'tune':11s} {'median':>8s} {'p90':>8s} {'worst':>8s} {'> 2 m':>6s} {'worst delay -2.0':>17s} {'episodes reaching -2.0':>23s}  (extra distance in m, positive = closer to lead)")
+def summary(eps, threshold):
+  print(f"   {'tune':5s} {'median':>8s} {'p90':>8s} {'worst':>8s} {'> 1 m':>6s} {'worst delay -2.0':>17s} {'episodes reaching -2.0':>23s}  (extra distance in m, positive = closer to lead)")
   for name in TUNES:
     ex = np.array([e[4][name]["extra"] for e in eps])
     d2 = [e[4][name]["delay"][-2.0] for e in eps if e[4][name]["delay"][-2.0] is not None]
     worst = max(d2) if d2 else None
-    print(f"   {name:11s} {np.median(ex):8.2f} {np.percentile(ex, 90):8.2f} {ex.max():8.2f} {int((ex > 2).sum()):6d} "
+    print(f"   {name:5s} {np.median(ex):8.2f} {np.percentile(ex, 90):8.2f} {ex.max():8.2f} {int((ex > 1).sum()):6d} "
           f"{fmt_delay(worst):>17s} {len(d2):>23d}")
-  print("   worst stock-like episodes:")
-  for e in sorted(eps, key=lambda e: -e[4]["stock-like"]["extra"])[:3]:
-    m = e[4]
-    print(f"     seg {e[0]} +{e[1] - seg0[e[0]]:5.1f} s  v {e[2]:4.1f} m/s  peak cmd {e[3]:5.2f}  extra: " +
-          "  ".join(f"{n} {m[n]['extra']:5.2f} m" for n in TUNES) + f"  stock-like delay -2.0 {fmt_delay(m['stock-like']['delay'][-2.0])}")
+
+
+def run_scan(route, threshold):
+  files = segment_files(route, "rlog")
+  if not files:
+    print(f"{short(route)}: no rlogs"); return []
+  rows = sorted(r for rs in pmap(load, files) for r in rs)
+  eps = episodes_of(rows, threshold)
+  seg0 = {s: min(r[T] for r in rows if r[SEG] == s) for s in {r[SEG] for r in rows}}
+  print(f"\n== {short(route)}: {len(files)} rlogs, {len(eps)} braking episodes below {threshold} m/s^2")
+  if eps:
+    summary(eps, threshold)
+    print("   worst episodes (by the larger of B and C):")
+    for e in sorted(eps, key=lambda e: -max(e[4]["B"]["extra"], e[4]["C"]["extra"]))[:3]:
+      m = e[4]
+      print(f"     seg {e[0]} +{e[1] - seg0[e[0]]:5.1f} s  v {e[2]:4.1f} m/s  peak cmd {e[3]:5.2f}  extra: " +
+            "  ".join(f"{n} {m[n]['extra']:5.2f} m" for n in TUNES[1:]) +
+            "  delay -2.0: " + "  ".join(f"{n} {fmt_delay(m[n]['delay'][-2.0])}" for n in TUNES[1:]))
+  return eps
 
 
 def main():
@@ -215,12 +216,16 @@ def main():
   p.add_argument("args", nargs="+", help="ROUTE SEG [SEG ...] KIND, or with --scan: ROUTE [ROUTE ...]")
   p.add_argument("--scan", action="store_true", help="all braking episodes of whole drives (rlogs)")
   p.add_argument("--threshold", type=float, default=-1.0, help="episode accel threshold (default %(default)s)")
-  p.add_argument("--starpilot", default="/home/user/wt/long-tune", help="checkout with the tunes (default: %(default)s)")
+  p.add_argument("--starpilot", default="/home/user/wt/stock-tune", help="checkout with the tunes (default: %(default)s)")
   args = p.parse_args()
   print(f"tunes from {add_starpilot_path(args.starpilot)}")
   if args.scan:
+    alleps = []
     for route in args.args:
-      run_scan(route, args.threshold)
+      alleps += run_scan(route, args.threshold)
+    if len(args.args) > 1 and alleps:
+      print(f"\n== all routes: {len(alleps)} braking episodes below {args.threshold} m/s^2")
+      summary(alleps, args.threshold)
     return
   route, kind = args.args[0], args.args[-1]
   if kind not in ("rlog", "qlog") or len(args.args) < 3:

@@ -87,6 +87,10 @@ Run with the venv's Python from `analysis/`:
 | `radar_vs_factory.py ROUTE... [--starpilot DIR] [--fine]` (rlog, stock ACC) | decoder vs the factory SCC11 lead: distance, relative speed and lateral by range and ego speed |
 | `radar_range_rate.py ROUTE... [--starpilot DIR]` (rlog) | decoder relative speed vs the radar's own range rate on centred tracks (any drive) |
 | `radar_vs_vision.py ROUTE...` (rlog) | radar lead vs camera lead by range, near-range offset, low-speed lead source |
+| `stock_mimic_check.py [ROUTE...] [--starpilot DIR] [--cache F.npz]` (rlog, stock ACC) | Stinger tunes B and C (stinger-stock-tune) vs the factory SCC fed with the factory target: aReqValue error and lower-jerk agreement by speed, lead and braking groups, against today's openpilot |
+| `tune_safety_replay.py ROUTE SEG... KIND` / `--scan ROUTE...` | replays logged openpilot braking through tunes A (today), B and C: peak, delay to -2/-3 m/s^2 and extra distance closer to the lead, for one hard brake or every braking episode of a drive |
+| `accel_lag.py [ROUTE...] [--carcontrol]` (rlog, openpilot long) | command -> aEgo lag of the sent accel: cross-correlation lag and delay + first-order tau (basis of longitudinalActuatorDelay) |
+| `follow_rates.py [--stock ROUTE...] [--openpilot ROUTE...]` (rlog) | rate of change of the accel command while following a lead, factory SCC vs openpilot long, for far-follow and any lead (basis of the planner slew / lead-follow jerk entries) |
 
 Routes can be short names (`0000000e--5ebf4636a1`); the dongle defaults to `$STINGER_DONGLE` (59fa1d41318b87d3).
 Scripts that decode CAN or run the radar decoder take opendbc from the StarPilot checkout (`--starpilot` to pick
