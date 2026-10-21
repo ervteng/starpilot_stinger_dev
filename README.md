@@ -55,6 +55,18 @@ The network must allow `api.commadotai.com` and `commadata2.blob.core.windows.ne
 
 Files land in `$STINGER_DEV_HOME/logs/<dongle>_<route>--<seg>--<rlog|qlog>.zst`.
 
+### Drive catalog
+
+[`routes/ROUTES.md`](routes/ROUTES.md) lists every drive with its build, longitudinal mode (openpilot or stock ACC),
+which segments have rlogs, and notes on what each was used for. `fetch_routes.py` re-downloads by name or tag:
+
+```bash
+./fetch_routes.py --tag stock-acc --rlog-only      # stock ACC drives with rlogs
+./fetch_routes.py --branch stinger-combined        # every drive on a build
+./fetch_routes.py 0000000e--5ebf4636a1 --type qlog
+./fetch_routes.py --list --tag auto-stop
+```
+
 ## Analysis
 
 Run with the venv's Python from `analysis/`:

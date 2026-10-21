@@ -1,0 +1,1113 @@
+{
+ "dongle": "59fa1d41318b87d3",
+ "generated": "2026-10-20 19:22 PDT",
+ "routes": [
+  {
+   "route": "59fa1d41318b87d3|00000001--97a0ab2a9f",
+   "start_pdt": "2026-09-17 15:13",
+   "segments": 15,
+   "branch": "release-mici",
+   "commit": "6a17f75c",
+   "longitudinal": "stock-capable-unused",
+   "cruise_engaged_pct": 0,
+   "rlog_segments": "",
+   "tags": [],
+   "notes": ""
+  },
+  {
+   "route": "59fa1d41318b87d3|00000003--2041a858cd",
+   "start_pdt": "2026-09-17 17:39",
+   "segments": 8,
+   "branch": "release-mici",
+   "commit": "6a17f75c",
+   "longitudinal": "openpilot-long",
+   "cruise_engaged_pct": 0,
+   "rlog_segments": "",
+   "tags": [],
+   "notes": ""
+  },
+  {
+   "route": "59fa1d41318b87d3|00000004--82e41031d9",
+   "start_pdt": "2026-09-17 17:57",
+   "segments": 13,
+   "branch": "release-mici",
+   "commit": "6a17f75c",
+   "longitudinal": "openpilot-long",
+   "cruise_engaged_pct": 27,
+   "rlog_segments": "",
+   "tags": [],
+   "notes": ""
+  },
+  {
+   "route": "59fa1d41318b87d3|00000007--09d019e731",
+   "start_pdt": "2026-09-18 18:29",
+   "segments": 10,
+   "branch": "release-mici",
+   "commit": "6a17f75c",
+   "longitudinal": "stock-capable-unused",
+   "cruise_engaged_pct": 0,
+   "rlog_segments": "",
+   "tags": [],
+   "notes": ""
+  },
+  {
+   "route": "59fa1d41318b87d3|0000000b--36ae41adcc",
+   "start_pdt": "2026-09-18 19:38",
+   "segments": 2,
+   "branch": "release-mici",
+   "commit": "6a17f75c",
+   "longitudinal": "openpilot-long",
+   "cruise_engaged_pct": 0,
+   "rlog_segments": "",
+   "tags": [],
+   "notes": ""
+  },
+  {
+   "route": "59fa1d41318b87d3|0000000d--d675980b5f",
+   "start_pdt": "2026-09-18 23:13",
+   "segments": 16,
+   "branch": "release-mici",
+   "commit": "6a17f75c",
+   "longitudinal": "openpilot-long",
+   "cruise_engaged_pct": 0,
+   "rlog_segments": "",
+   "tags": [],
+   "notes": ""
+  },
+  {
+   "route": "59fa1d41318b87d3|0000000e--334ca4004b",
+   "start_pdt": "2026-09-20 11:04",
+   "segments": 15,
+   "branch": "release-mici",
+   "commit": "6a17f75c",
+   "longitudinal": "openpilot-long",
+   "cruise_engaged_pct": 0,
+   "rlog_segments": "",
+   "tags": [],
+   "notes": ""
+  },
+  {
+   "route": "59fa1d41318b87d3|0000000f--3473db42b0",
+   "start_pdt": "2026-09-20 11:58",
+   "segments": 14,
+   "branch": "release-mici",
+   "commit": "6a17f75c",
+   "longitudinal": "openpilot-long",
+   "cruise_engaged_pct": 0,
+   "rlog_segments": "",
+   "tags": [],
+   "notes": ""
+  },
+  {
+   "route": "59fa1d41318b87d3|00000010--420bf4cd99",
+   "start_pdt": "2026-09-21 13:45",
+   "segments": 11,
+   "branch": "release-mici",
+   "commit": "6a17f75c",
+   "longitudinal": "stock-capable-unused",
+   "cruise_engaged_pct": 0,
+   "rlog_segments": "",
+   "tags": [],
+   "notes": ""
+  },
+  {
+   "route": "59fa1d41318b87d3|00000012--c9d8ad98fc",
+   "start_pdt": "2026-09-22 08:52",
+   "segments": 4,
+   "branch": "release-mici",
+   "commit": "6a17f75c",
+   "longitudinal": "stock-capable-unused",
+   "cruise_engaged_pct": 0,
+   "rlog_segments": "",
+   "tags": [],
+   "notes": ""
+  },
+  {
+   "route": "59fa1d41318b87d3|00000013--c09c96b6b2",
+   "start_pdt": "2026-09-22 08:56",
+   "segments": 40,
+   "branch": "release-mici",
+   "commit": "6a17f75c",
+   "longitudinal": "stock-acc",
+   "cruise_engaged_pct": 7,
+   "rlog_segments": "",
+   "tags": [],
+   "notes": ""
+  },
+  {
+   "route": "59fa1d41318b87d3|00000014--cb06fd8d0c",
+   "start_pdt": "2026-09-22 11:03",
+   "segments": 2,
+   "branch": "release-mici",
+   "commit": "6a17f75c",
+   "longitudinal": "stock-capable-unused",
+   "cruise_engaged_pct": 0,
+   "rlog_segments": "",
+   "tags": [],
+   "notes": ""
+  },
+  {
+   "route": "59fa1d41318b87d3|00000016--9fa9b9d151",
+   "start_pdt": "2026-09-22 17:56",
+   "segments": 6,
+   "branch": "release-mici",
+   "commit": "6a17f75c",
+   "longitudinal": "openpilot-long",
+   "cruise_engaged_pct": 50,
+   "rlog_segments": "",
+   "tags": [],
+   "notes": ""
+  },
+  {
+   "route": "59fa1d41318b87d3|00000018--7e9c97b1ac",
+   "start_pdt": "2026-09-22 20:06",
+   "segments": 1,
+   "branch": "release-mici",
+   "commit": "6a17f75c",
+   "longitudinal": "openpilot-long",
+   "cruise_engaged_pct": 0,
+   "rlog_segments": "",
+   "tags": [],
+   "notes": ""
+  },
+  {
+   "route": "59fa1d41318b87d3|00000019--72bc60fe97",
+   "start_pdt": "2026-09-22 20:07",
+   "segments": 1,
+   "branch": "release-mici",
+   "commit": "6a17f75c",
+   "longitudinal": "openpilot-long",
+   "cruise_engaged_pct": 0,
+   "rlog_segments": "",
+   "tags": [],
+   "notes": ""
+  },
+  {
+   "route": "59fa1d41318b87d3|0000001a--35482e63af",
+   "start_pdt": "2026-09-22 20:08",
+   "segments": 34,
+   "branch": "release-mici",
+   "commit": "6a17f75c",
+   "longitudinal": "openpilot-long",
+   "cruise_engaged_pct": 70,
+   "rlog_segments": "",
+   "tags": [],
+   "notes": ""
+  },
+  {
+   "route": "59fa1d41318b87d3|0000001b--e606a33a74",
+   "start_pdt": "2026-09-24 09:16",
+   "segments": 48,
+   "branch": "release-mici",
+   "commit": "6a17f75c",
+   "longitudinal": "openpilot-long",
+   "cruise_engaged_pct": 0,
+   "rlog_segments": "",
+   "tags": [],
+   "notes": ""
+  },
+  {
+   "route": "59fa1d41318b87d3|0000001c--202f4bdf5d",
+   "start_pdt": "2026-09-24 15:08",
+   "segments": 2,
+   "branch": "release-mici",
+   "commit": "6a17f75c",
+   "longitudinal": "openpilot-long",
+   "cruise_engaged_pct": 0,
+   "rlog_segments": "",
+   "tags": [],
+   "notes": ""
+  },
+  {
+   "route": "59fa1d41318b87d3|0000001e--3d11b5b5d6",
+   "start_pdt": "2026-09-24 15:11",
+   "segments": 52,
+   "branch": "release-mici",
+   "commit": "6a17f75c",
+   "longitudinal": "openpilot-long",
+   "cruise_engaged_pct": 0,
+   "rlog_segments": "",
+   "tags": [],
+   "notes": ""
+  },
+  {
+   "route": "59fa1d41318b87d3|00000000--a033848cef",
+   "start_pdt": "2026-09-25 11:33",
+   "segments": 15,
+   "branch": "StarPilot",
+   "commit": "2a12dbd0",
+   "longitudinal": "stock-capable-unused",
+   "cruise_engaged_pct": 0,
+   "rlog_segments": "",
+   "tags": [],
+   "notes": ""
+  },
+  {
+   "route": "59fa1d41318b87d3|00000001--b1c5bf23f3",
+   "start_pdt": "2026-09-25 11:47",
+   "segments": 21,
+   "branch": "StarPilot",
+   "commit": "2a12dbd0",
+   "longitudinal": "openpilot-long",
+   "cruise_engaged_pct": 0,
+   "rlog_segments": "",
+   "tags": [],
+   "notes": ""
+  },
+  {
+   "route": "59fa1d41318b87d3|00000002--b47e891d5f",
+   "start_pdt": "2026-09-25 12:52",
+   "segments": 11,
+   "branch": "StarPilot",
+   "commit": "2a12dbd0",
+   "longitudinal": "openpilot-long",
+   "cruise_engaged_pct": 30,
+   "rlog_segments": "0-10",
+   "tags": [
+    "auto-stop"
+   ],
+   "notes": "Auto Stop steering-fault root cause: rlog segs 9-10 show LVR12 CF_Lvr_IsgState -> MDPS ToiUnavail -> steerTempUnavailableSilent."
+  },
+  {
+   "route": "59fa1d41318b87d3|00000003--57168e519c",
+   "start_pdt": "2026-09-25 13:04",
+   "segments": 18,
+   "branch": "StarPilot",
+   "commit": "2a12dbd0",
+   "longitudinal": "openpilot-long",
+   "cruise_engaged_pct": 59,
+   "rlog_segments": "0",
+   "tags": [
+    "fingerprint",
+    "steer-fault"
+   ],
+   "notes": "rlog seg 0: 0x544 Navi_HU on bus 0 within 0.03 s of startup. Moving steerTempUnavailable soft-disables in segs 8 and 15 (not yet investigated)."
+  },
+  {
+   "route": "59fa1d41318b87d3|00000004--d9c8338110",
+   "start_pdt": "2026-09-25 18:15",
+   "segments": 53,
+   "branch": "StarPilot",
+   "commit": "2a12dbd0",
+   "longitudinal": "openpilot-long",
+   "cruise_engaged_pct": 82,
+   "rlog_segments": "0",
+   "tags": [
+    "fingerprint"
+   ],
+   "notes": "rlog seg 0: 0x544 on bus 0 at 0.12 s; 0x391 (LFA button) and 0x53E (8 bytes, not LKAS12) present."
+  },
+  {
+   "route": "59fa1d41318b87d3|00000005--3d16185212",
+   "start_pdt": "2026-09-25 21:47",
+   "segments": 27,
+   "branch": "StarPilot",
+   "commit": "2a12dbd0",
+   "longitudinal": "openpilot-long",
+   "cruise_engaged_pct": 50,
+   "rlog_segments": "",
+   "tags": [],
+   "notes": ""
+  },
+  {
+   "route": "59fa1d41318b87d3|00000006--e8e7a5b4b8",
+   "start_pdt": "2026-09-25 23:48",
+   "segments": 22,
+   "branch": "StarPilot",
+   "commit": "2a12dbd0",
+   "longitudinal": "openpilot-long",
+   "cruise_engaged_pct": 72,
+   "rlog_segments": "",
+   "tags": [],
+   "notes": ""
+  },
+  {
+   "route": "59fa1d41318b87d3|00000007--12de5a9ebe",
+   "start_pdt": "2026-09-26 13:42",
+   "segments": 24,
+   "branch": "StarPilot",
+   "commit": "2a12dbd0",
+   "longitudinal": "openpilot-long",
+   "cruise_engaged_pct": 65,
+   "rlog_segments": "",
+   "tags": [],
+   "notes": ""
+  },
+  {
+   "route": "59fa1d41318b87d3|00000008--d614cda160",
+   "start_pdt": "2026-09-26 14:26",
+   "segments": 29,
+   "branch": "StarPilot",
+   "commit": "2a12dbd0",
+   "longitudinal": "openpilot-long",
+   "cruise_engaged_pct": 87,
+   "rlog_segments": "",
+   "tags": [],
+   "notes": ""
+  },
+  {
+   "route": "59fa1d41318b87d3|00000009--b4c501a09f",
+   "start_pdt": "2026-09-26 15:43",
+   "segments": 19,
+   "branch": "StarPilot",
+   "commit": "2a12dbd0",
+   "longitudinal": "openpilot-long",
+   "cruise_engaged_pct": 62,
+   "rlog_segments": "",
+   "tags": [],
+   "notes": ""
+  },
+  {
+   "route": "59fa1d41318b87d3|0000000a--5d70970aea",
+   "start_pdt": "2026-09-26 16:05",
+   "segments": 2,
+   "branch": "StarPilot",
+   "commit": "2a12dbd0",
+   "longitudinal": "openpilot-long",
+   "cruise_engaged_pct": 0,
+   "rlog_segments": "",
+   "tags": [],
+   "notes": ""
+  },
+  {
+   "route": "59fa1d41318b87d3|0000000b--b1ff9cb5b9",
+   "start_pdt": "2026-09-26 17:38",
+   "segments": 34,
+   "branch": "StarPilot",
+   "commit": "2a12dbd0",
+   "longitudinal": "openpilot-long",
+   "cruise_engaged_pct": 39,
+   "rlog_segments": "",
+   "tags": [],
+   "notes": ""
+  },
+  {
+   "route": "59fa1d41318b87d3|0000000d--589d37fcb6",
+   "start_pdt": "2026-09-26 18:18",
+   "segments": 23,
+   "branch": "StarPilot",
+   "commit": "2a12dbd0",
+   "longitudinal": "openpilot-long",
+   "cruise_engaged_pct": 57,
+   "rlog_segments": "",
+   "tags": [],
+   "notes": ""
+  },
+  {
+   "route": "59fa1d41318b87d3|0000000e--302c49a370",
+   "start_pdt": "2026-09-27 12:47",
+   "segments": 5,
+   "branch": "StarPilot",
+   "commit": "2a12dbd0",
+   "longitudinal": "openpilot-long",
+   "cruise_engaged_pct": 0,
+   "rlog_segments": "",
+   "tags": [],
+   "notes": ""
+  },
+  {
+   "route": "59fa1d41318b87d3|0000000f--043ec62787",
+   "start_pdt": "2026-09-27 12:56",
+   "segments": 13,
+   "branch": "StarPilot",
+   "commit": "2a12dbd0",
+   "longitudinal": "openpilot-long",
+   "cruise_engaged_pct": 28,
+   "rlog_segments": "",
+   "tags": [],
+   "notes": ""
+  },
+  {
+   "route": "59fa1d41318b87d3|00000010--f19579589d",
+   "start_pdt": "2026-09-27 13:55",
+   "segments": 25,
+   "branch": "StarPilot",
+   "commit": "2a12dbd0",
+   "longitudinal": "openpilot-long",
+   "cruise_engaged_pct": 18,
+   "rlog_segments": "",
+   "tags": [],
+   "notes": ""
+  },
+  {
+   "route": "59fa1d41318b87d3|00000011--958a4f4239",
+   "start_pdt": "2026-09-28 17:09",
+   "segments": 15,
+   "branch": "Dom",
+   "commit": "8d01d881",
+   "longitudinal": "openpilot-long",
+   "cruise_engaged_pct": 66,
+   "rlog_segments": "",
+   "tags": [],
+   "notes": ""
+  },
+  {
+   "route": "59fa1d41318b87d3|00000012--fa118cae70",
+   "start_pdt": "2026-09-28 18:41",
+   "segments": 10,
+   "branch": "Dom",
+   "commit": "8d01d881",
+   "longitudinal": "openpilot-long",
+   "cruise_engaged_pct": 16,
+   "rlog_segments": "0-9",
+   "tags": [
+    "radar"
+   ],
+   "notes": "Early stinger_shadow_logger / radar validation rlogs."
+  },
+  {
+   "route": "59fa1d41318b87d3|00000013--1dee345bd5",
+   "start_pdt": "2026-09-28 19:15",
+   "segments": 8,
+   "branch": "Dom",
+   "commit": "8d01d881",
+   "longitudinal": "openpilot-long",
+   "cruise_engaged_pct": 24,
+   "rlog_segments": "",
+   "tags": [],
+   "notes": ""
+  },
+  {
+   "route": "59fa1d41318b87d3|00000014--b007190867",
+   "start_pdt": "2026-09-29 12:58",
+   "segments": 37,
+   "branch": "Dom",
+   "commit": "faf5b533",
+   "longitudinal": "openpilot-long",
+   "cruise_engaged_pct": 56,
+   "rlog_segments": "",
+   "tags": [],
+   "notes": ""
+  },
+  {
+   "route": "59fa1d41318b87d3|00000015--6e8a636bae",
+   "start_pdt": "2026-09-29 13:38",
+   "segments": 16,
+   "branch": "Dom",
+   "commit": "faf5b533",
+   "longitudinal": "openpilot-long",
+   "cruise_engaged_pct": 29,
+   "rlog_segments": "",
+   "tags": [],
+   "notes": ""
+  },
+  {
+   "route": "59fa1d41318b87d3|00000016--b561df0e16",
+   "start_pdt": "2026-09-29 14:15",
+   "segments": 7,
+   "branch": "Dom",
+   "commit": "faf5b533",
+   "longitudinal": "openpilot-long",
+   "cruise_engaged_pct": 0,
+   "rlog_segments": "",
+   "tags": [],
+   "notes": ""
+  },
+  {
+   "route": "59fa1d41318b87d3|00000017--d84f118ce3",
+   "start_pdt": "2026-09-29 16:45",
+   "segments": 46,
+   "branch": "Dom",
+   "commit": "faf5b533",
+   "longitudinal": "openpilot-long",
+   "cruise_engaged_pct": 30,
+   "rlog_segments": "",
+   "tags": [],
+   "notes": ""
+  },
+  {
+   "route": "59fa1d41318b87d3|00000018--cd6ae716bf",
+   "start_pdt": "2026-09-30 10:19",
+   "segments": 27,
+   "branch": "Dom",
+   "commit": "bf1b916d",
+   "longitudinal": "openpilot-long",
+   "cruise_engaged_pct": 85,
+   "rlog_segments": "",
+   "tags": [],
+   "notes": ""
+  },
+  {
+   "route": "59fa1d41318b87d3|00000019--a442ae859d",
+   "start_pdt": "2026-09-30 10:46",
+   "segments": 8,
+   "branch": "Dom",
+   "commit": "bf1b916d",
+   "longitudinal": "openpilot-long",
+   "cruise_engaged_pct": 0,
+   "rlog_segments": "",
+   "tags": [],
+   "notes": ""
+  },
+  {
+   "route": "59fa1d41318b87d3|0000001b--ca5f606d61",
+   "start_pdt": "2026-09-30 17:41",
+   "segments": 2,
+   "branch": "Dom",
+   "commit": "bf1b916d",
+   "longitudinal": "stock-capable-unused",
+   "cruise_engaged_pct": 0,
+   "rlog_segments": "",
+   "tags": [],
+   "notes": ""
+  },
+  {
+   "route": "59fa1d41318b87d3|0000001c--8038c5b788",
+   "start_pdt": "2026-09-30 17:43",
+   "segments": 9,
+   "branch": "Dom",
+   "commit": "bf1b916d",
+   "longitudinal": "stock-capable-unused",
+   "cruise_engaged_pct": 0,
+   "rlog_segments": "",
+   "tags": [],
+   "notes": ""
+  },
+  {
+   "route": "59fa1d41318b87d3|0000001d--2ead59d2dd",
+   "start_pdt": "2026-09-30 18:47",
+   "segments": 21,
+   "branch": "Dom",
+   "commit": "bf1b916d",
+   "longitudinal": "stock-acc",
+   "cruise_engaged_pct": 46,
+   "rlog_segments": "0-20",
+   "tags": [
+    "stock-acc",
+    "radar"
+   ],
+   "notes": "Stock ACC with rlogs: speed-bias fix validation, long-range distance step, stock highway lead-braking comparison."
+  },
+  {
+   "route": "59fa1d41318b87d3|0000001e--552bf479e7",
+   "start_pdt": "2026-09-30 22:05",
+   "segments": 5,
+   "branch": "Dom",
+   "commit": "bf1b916d",
+   "longitudinal": "stock-capable-unused",
+   "cruise_engaged_pct": 0,
+   "rlog_segments": "",
+   "tags": [],
+   "notes": ""
+  },
+  {
+   "route": "59fa1d41318b87d3|0000001f--d329339126",
+   "start_pdt": "2026-09-30 22:13",
+   "segments": 1,
+   "branch": "Dom",
+   "commit": "bf1b916d",
+   "longitudinal": "unknown",
+   "cruise_engaged_pct": 0,
+   "rlog_segments": "",
+   "tags": [],
+   "notes": ""
+  },
+  {
+   "route": "59fa1d41318b87d3|00000020--c23a593a3c",
+   "start_pdt": "2026-09-30 22:13",
+   "segments": 8,
+   "branch": "Dom",
+   "commit": "42d4a5b2",
+   "longitudinal": "stock-capable-unused",
+   "cruise_engaged_pct": 0,
+   "rlog_segments": "",
+   "tags": [],
+   "notes": ""
+  },
+  {
+   "route": "59fa1d41318b87d3|00000022--a0e97fae8d",
+   "start_pdt": "2026-09-30 22:46",
+   "segments": 7,
+   "branch": "Dom",
+   "commit": "42d4a5b2",
+   "longitudinal": "stock-capable-unused",
+   "cruise_engaged_pct": 0,
+   "rlog_segments": "",
+   "tags": [],
+   "notes": ""
+  },
+  {
+   "route": "59fa1d41318b87d3|00000023--3f5d2c1b16",
+   "start_pdt": "2026-09-30 22:53",
+   "segments": 36,
+   "branch": "Dom",
+   "commit": "42d4a5b2",
+   "longitudinal": "stock-acc",
+   "cruise_engaged_pct": 88,
+   "rlog_segments": "",
+   "tags": [
+    "stock-acc"
+   ],
+   "notes": "Stock ACC, qlogs only."
+  },
+  {
+   "route": "59fa1d41318b87d3|00000024--c157d1aa98",
+   "start_pdt": "2026-10-11 20:29",
+   "segments": 14,
+   "branch": "Dom",
+   "commit": "83f914fc",
+   "longitudinal": "stock-acc",
+   "cruise_engaged_pct": 1,
+   "rlog_segments": "0-13",
+   "tags": [],
+   "notes": ""
+  },
+  {
+   "route": "59fa1d41318b87d3|00000025--d6de5490c3",
+   "start_pdt": "2026-10-11 21:21",
+   "segments": 1,
+   "branch": "Dom",
+   "commit": "83f914fc",
+   "longitudinal": "stock-capable-unused",
+   "cruise_engaged_pct": 0,
+   "rlog_segments": "",
+   "tags": [],
+   "notes": ""
+  },
+  {
+   "route": "59fa1d41318b87d3|00000026--d88af29f29",
+   "start_pdt": "2026-10-11 21:42",
+   "segments": 17,
+   "branch": "Dom",
+   "commit": "83f914fc",
+   "longitudinal": "stock-capable-unused",
+   "cruise_engaged_pct": 0,
+   "rlog_segments": "",
+   "tags": [],
+   "notes": ""
+  },
+  {
+   "route": "59fa1d41318b87d3|00000027--95ce23ee58",
+   "start_pdt": "2026-10-13 09:51",
+   "segments": 4,
+   "branch": "Dom",
+   "commit": "3ccae7b8",
+   "longitudinal": "stock-acc",
+   "cruise_engaged_pct": 3,
+   "rlog_segments": "0-3",
+   "tags": [],
+   "notes": ""
+  },
+  {
+   "route": "59fa1d41318b87d3|00000028--297af64c9c",
+   "start_pdt": "2026-10-13 17:48",
+   "segments": 47,
+   "branch": "Dom",
+   "commit": "3ccae7b8",
+   "longitudinal": "stock-acc",
+   "cruise_engaged_pct": 79,
+   "rlog_segments": "0-46",
+   "tags": [
+    "stock-acc",
+    "radar",
+    "aeb"
+   ],
+   "notes": "Stock ACC reference drive (Gemini's). Decoder vs factory SCC11 lead, speed-bias fit, FCA11/SCC12 AEB fields (never active), bus-1 contents."
+  },
+  {
+   "route": "59fa1d41318b87d3|00000029--b3c2c13819",
+   "start_pdt": "2026-10-14 09:30",
+   "segments": 31,
+   "branch": "Dom",
+   "commit": "b220a37f",
+   "longitudinal": "stock-acc",
+   "cruise_engaged_pct": 89,
+   "rlog_segments": "0-30",
+   "tags": [
+    "stock-acc",
+    "radar"
+   ],
+   "notes": "Stock ACC with rlogs (mostly highway): speed-bias fix validation, stock lead-braking comparison."
+  },
+  {
+   "route": "59fa1d41318b87d3|0000002a--9e80623643",
+   "start_pdt": "2026-10-14 13:15",
+   "segments": 6,
+   "branch": "Dom",
+   "commit": "b220a37f",
+   "longitudinal": "stock-capable-unused",
+   "cruise_engaged_pct": 0,
+   "rlog_segments": "",
+   "tags": [],
+   "notes": ""
+  },
+  {
+   "route": "59fa1d41318b87d3|0000002b--66bdc92988",
+   "start_pdt": "2026-10-14 16:13",
+   "segments": 54,
+   "branch": "Dom",
+   "commit": "b220a37f",
+   "longitudinal": "stock-acc",
+   "cruise_engaged_pct": 86,
+   "rlog_segments": "",
+   "tags": [
+    "stock-acc"
+   ],
+   "notes": "Stock ACC, long highway drive, qlogs only. Moving steerTempUnavailable soft-disable seg 51."
+  },
+  {
+   "route": "59fa1d41318b87d3|0000002d--4057c8b1e2",
+   "start_pdt": "2026-10-15 10:55",
+   "segments": 2,
+   "branch": "Dom",
+   "commit": "b220a37f",
+   "longitudinal": "openpilot-long",
+   "cruise_engaged_pct": 0,
+   "rlog_segments": "",
+   "tags": [],
+   "notes": ""
+  },
+  {
+   "route": "59fa1d41318b87d3|0000002e--2b8b57f853",
+   "start_pdt": "2026-10-15 10:57",
+   "segments": 33,
+   "branch": "Dom",
+   "commit": "b220a37f",
+   "longitudinal": "openpilot-long",
+   "cruise_engaged_pct": 88,
+   "rlog_segments": "",
+   "tags": [],
+   "notes": ""
+  },
+  {
+   "route": "59fa1d41318b87d3|0000002f--80fea0ab0e",
+   "start_pdt": "2026-10-15 15:55",
+   "segments": 50,
+   "branch": "Dom",
+   "commit": "b220a37f",
+   "longitudinal": "openpilot-long",
+   "cruise_engaged_pct": 92,
+   "rlog_segments": "",
+   "tags": [],
+   "notes": ""
+  },
+  {
+   "route": "59fa1d41318b87d3|00000030--261b737529",
+   "start_pdt": "2026-10-15 16:45",
+   "segments": 2,
+   "branch": "Dom",
+   "commit": "b220a37f",
+   "longitudinal": "stock-capable-unused",
+   "cruise_engaged_pct": 0,
+   "rlog_segments": "",
+   "tags": [],
+   "notes": ""
+  },
+  {
+   "route": "59fa1d41318b87d3|00000032--9efb5c0a74",
+   "start_pdt": "2026-10-15 16:47",
+   "segments": 9,
+   "branch": "Dom",
+   "commit": "b220a37f",
+   "longitudinal": "stock-acc",
+   "cruise_engaged_pct": 29,
+   "rlog_segments": "",
+   "tags": [],
+   "notes": ""
+  },
+  {
+   "route": "59fa1d41318b87d3|00000033--f7e46742e3",
+   "start_pdt": "2026-10-16 08:32",
+   "segments": 34,
+   "branch": "Dom",
+   "commit": "b220a37f",
+   "longitudinal": "stock-acc",
+   "cruise_engaged_pct": 18,
+   "rlog_segments": "",
+   "tags": [],
+   "notes": ""
+  },
+  {
+   "route": "59fa1d41318b87d3|00000034--5f8605e608",
+   "start_pdt": "2026-10-16 09:09",
+   "segments": 37,
+   "branch": "Dom",
+   "commit": "b220a37f",
+   "longitudinal": "stock-acc",
+   "cruise_engaged_pct": 79,
+   "rlog_segments": "0-36",
+   "tags": [
+    "stock-acc",
+    "radar"
+   ],
+   "notes": "Stock ACC with rlogs (mostly highway): speed-bias fix validation."
+  },
+  {
+   "route": "59fa1d41318b87d3|00000035--fcfb8f4e99",
+   "start_pdt": "2026-10-16 10:01",
+   "segments": 74,
+   "branch": "Dom",
+   "commit": "b220a37f",
+   "longitudinal": "stock-acc",
+   "cruise_engaged_pct": 82,
+   "rlog_segments": "",
+   "tags": [
+    "stock-acc"
+   ],
+   "notes": "Stock ACC, 74 segs, qlogs only."
+  },
+  {
+   "route": "59fa1d41318b87d3|00000036--d0d092a03d",
+   "start_pdt": "2026-10-17 10:00",
+   "segments": 10,
+   "branch": "stinger-radar-lfa",
+   "commit": "a5b024a6",
+   "longitudinal": "stock-acc",
+   "cruise_engaged_pct": 18,
+   "rlog_segments": "",
+   "tags": [],
+   "notes": ""
+  },
+  {
+   "route": "59fa1d41318b87d3|00000037--6c52a9db6d",
+   "start_pdt": "2026-10-17 13:25",
+   "segments": 10,
+   "branch": "stinger-radar-lfa",
+   "commit": "a5b024a6",
+   "longitudinal": "stock-acc",
+   "cruise_engaged_pct": 19,
+   "rlog_segments": "",
+   "tags": [],
+   "notes": ""
+  },
+  {
+   "route": "59fa1d41318b87d3|00000038--99b9b4ae8e",
+   "start_pdt": "2026-10-17 13:35",
+   "segments": 61,
+   "branch": "stinger-radar-lfa",
+   "commit": "a5b024a6",
+   "longitudinal": "openpilot-long",
+   "cruise_engaged_pct": 70,
+   "rlog_segments": "0-60",
+   "tags": [
+    "stops"
+   ],
+   "notes": "Old stop tune with radar (before the G90 port)."
+  },
+  {
+   "route": "59fa1d41318b87d3|00000039--957778f296",
+   "start_pdt": "2026-10-17 18:42",
+   "segments": 2,
+   "branch": "stinger-radar-lfa",
+   "commit": "a5b024a6",
+   "longitudinal": "openpilot-long",
+   "cruise_engaged_pct": 0,
+   "rlog_segments": "",
+   "tags": [],
+   "notes": ""
+  },
+  {
+   "route": "59fa1d41318b87d3|0000003b--e4b2bdfa67",
+   "start_pdt": "2026-10-17 18:44",
+   "segments": 9,
+   "branch": "stinger-radar-lfa",
+   "commit": "a5b024a6",
+   "longitudinal": "openpilot-long",
+   "cruise_engaged_pct": 11,
+   "rlog_segments": "",
+   "tags": [],
+   "notes": ""
+  },
+  {
+   "route": "59fa1d41318b87d3|0000003c--37afc888fe",
+   "start_pdt": "2026-10-17 19:20",
+   "segments": 51,
+   "branch": "stinger-radar-lfa",
+   "commit": "a5b024a6",
+   "longitudinal": "openpilot-long",
+   "cruise_engaged_pct": 83,
+   "rlog_segments": "",
+   "tags": [],
+   "notes": ""
+  },
+  {
+   "route": "59fa1d41318b87d3|0000003d--5535441901",
+   "start_pdt": "2026-10-17 23:26",
+   "segments": 12,
+   "branch": "stinger-radar-lfa",
+   "commit": "a5b024a6",
+   "longitudinal": "openpilot-long",
+   "cruise_engaged_pct": 70,
+   "rlog_segments": "0-11",
+   "tags": [
+    "public"
+   ],
+   "notes": "Public route."
+  },
+  {
+   "route": "59fa1d41318b87d3|00000000--c3b9b96ad1",
+   "start_pdt": "2026-10-18 15:01",
+   "segments": 5,
+   "branch": "stinger-radar-lfa",
+   "commit": "fdfe8e23",
+   "longitudinal": "openpilot-long",
+   "cruise_engaged_pct": 9,
+   "rlog_segments": "",
+   "tags": [
+    "steering"
+   ],
+   "notes": "First drive after the Oct 18 settings reset: SteerLatAccel 0.0 -> clamped to 1.375, doubled steering torque."
+  },
+  {
+   "route": "59fa1d41318b87d3|00000003--c4851468f1",
+   "start_pdt": "2026-10-18 15:17",
+   "segments": 14,
+   "branch": "stinger-radar-lfa",
+   "commit": "fdfe8e23",
+   "longitudinal": "openpilot-long",
+   "cruise_engaged_pct": 61,
+   "rlog_segments": "",
+   "tags": [],
+   "notes": ""
+  },
+  {
+   "route": "59fa1d41318b87d3|00000004--51331d19d5",
+   "start_pdt": "2026-10-18 16:23",
+   "segments": 18,
+   "branch": "stinger-radar-lfa",
+   "commit": "fdfe8e23",
+   "longitudinal": "openpilot-long",
+   "cruise_engaged_pct": 63,
+   "rlog_segments": "",
+   "tags": [],
+   "notes": ""
+  },
+  {
+   "route": "59fa1d41318b87d3|00000005--8264b7d4f0",
+   "start_pdt": "2026-10-19 15:07",
+   "segments": 12,
+   "branch": "stinger-radar-lfa",
+   "commit": "f087104e",
+   "longitudinal": "openpilot-long",
+   "cruise_engaged_pct": 62,
+   "rlog_segments": "0-11",
+   "tags": [
+    "steering",
+    "auto-stop"
+   ],
+   "notes": "Steering oscillation analysis (SteerLatAccel). rlog seg 9 has an Auto Stop engine restart."
+  },
+  {
+   "route": "59fa1d41318b87d3|00000006--38cf647ea8",
+   "start_pdt": "2026-10-19 16:19",
+   "segments": 11,
+   "branch": "stinger-radar-lfa",
+   "commit": "f087104e",
+   "longitudinal": "openpilot-long",
+   "cruise_engaged_pct": 63,
+   "rlog_segments": "0-10",
+   "tags": [
+    "radar",
+    "stops"
+   ],
+   "notes": "First drive with the decoder changes; reversing-lead (stop undershoot) investigation."
+  },
+  {
+   "route": "59fa1d41318b87d3|00000007--705b36fece",
+   "start_pdt": "2026-10-19 18:44",
+   "segments": 24,
+   "branch": "stinger-radar-lfa",
+   "commit": "eb7ecd28",
+   "longitudinal": "openpilot-long",
+   "cruise_engaged_pct": 21,
+   "rlog_segments": "",
+   "tags": [
+    "stops",
+    "g90-tune"
+   ],
+   "notes": "G90 stop tune (stinger-radar-lfa eb7ecd2)."
+  },
+  {
+   "route": "59fa1d41318b87d3|00000008--b0f7c14716",
+   "start_pdt": "2026-10-19 21:29",
+   "segments": 11,
+   "branch": "stinger-radar-lfa",
+   "commit": "eb7ecd28",
+   "longitudinal": "openpilot-long",
+   "cruise_engaged_pct": 35,
+   "rlog_segments": "",
+   "tags": [
+    "stops",
+    "g90-tune"
+   ],
+   "notes": "G90 stop tune (stinger-radar-lfa eb7ecd2)."
+  },
+  {
+   "route": "59fa1d41318b87d3|0000000a--a4b564ef5e",
+   "start_pdt": "2026-10-20 08:46",
+   "segments": 39,
+   "branch": "stinger-radar-lfa",
+   "commit": "eb7ecd28",
+   "longitudinal": "openpilot-long",
+   "cruise_engaged_pct": 91,
+   "rlog_segments": "",
+   "tags": [
+    "g90-tune",
+    "fcw",
+    "highway"
+   ],
+   "notes": "G90 build. Openpilot FCW at seg 25 (lead braked 57->38 mph; -3.5 m/s^2, closest gap 10.7 m). Highway braking analysis."
+  },
+  {
+   "route": "59fa1d41318b87d3|0000000b--4ec3463e2b",
+   "start_pdt": "2026-10-20 17:02",
+   "segments": 2,
+   "branch": "stinger-radar-lfa",
+   "commit": "eb7ecd28",
+   "longitudinal": "openpilot-long",
+   "cruise_engaged_pct": 0,
+   "rlog_segments": "",
+   "tags": [],
+   "notes": "1.5 min idle, no driving."
+  },
+  {
+   "route": "59fa1d41318b87d3|0000000c--8c7821740b",
+   "start_pdt": "2026-10-20 17:05",
+   "segments": 5,
+   "branch": "stinger-combined",
+   "commit": "93871099",
+   "longitudinal": "openpilot-long",
+   "cruise_engaged_pct": 0,
+   "rlog_segments": "",
+   "tags": [
+    "speed-limit"
+   ],
+   "notes": "First stinger-combined drive (9387109), not engaged. Dashboard speed limit check."
+  },
+  {
+   "route": "59fa1d41318b87d3|0000000d--5e0d1d244b",
+   "start_pdt": "2026-10-20 17:16",
+   "segments": 19,
+   "branch": "stinger-combined",
+   "commit": "93871099",
+   "longitudinal": "openpilot-long",
+   "cruise_engaged_pct": 88,
+   "rlog_segments": "10-18",
+   "tags": [
+    "speed-limit",
+    "auto-stop",
+    "stops",
+    "highway"
+   ],
+   "notes": "stinger-combined 9387109: Auto Stop fix validated in rlog segs 15-18, dashboard speed limit 99%, highway braking (cut-in seg ~4)."
+  },
+  {
+   "route": "59fa1d41318b87d3|0000000e--5ebf4636a1",
+   "start_pdt": "2026-10-20 17:38",
+   "segments": 35,
+   "branch": "stinger-combined",
+   "commit": "93871099",
+   "longitudinal": "openpilot-long",
+   "cruise_engaged_pct": 92,
+   "rlog_segments": "3-28",
+   "tags": [
+    "speed-limit",
+    "auto-stop",
+    "stops",
+    "highway",
+    "radar"
+   ],
+   "notes": "stinger-combined 9387109: highway traffic jam hard brake ~708 s (seg 11), Auto Stop seg 3, radar vs vision offsets, out-of-sample speed-bias check."
+  }
+ ]
+}
