@@ -11,7 +11,7 @@ them is replicated here from CarController (see TuneB / TuneC, which mirror crea
 CarController.update):
   B  get_hyundai_canfd_scc_jerk_limits + shape_hyundai_canfd_scc_accel(kia_stinger_2022_tune=True, jerk_upper,
      lead_visible, lead_distance), every 2nd frame (50 Hz), accel_last = last accel sent.
-  C  update_ioniq_6_longitudinal_tuning(kia_stinger_2022=True, lead) every 5th frame, smoothed only while
+  C  update_ioniq_6_longitudinal_tuning(kia_stinger_2022=True; dynamic lower jerk capped at 2.5, no lead) every 5th frame, smoothed only while
      urgent threshold < accel < the smoothed value, else the command passes through and the state follows it.
 "today" is what openpilot sends without a tune (aReqValue = aReqRaw, jerk 3.0 / 5.0). Inputs per frame: accel =
 SCC12 aReqRaw, enabled = SCC12 ACCMode == 1 with no gas/brake pedal, stopping = SCC12 StopReq (long control state
@@ -80,11 +80,11 @@ class TuneB:
 
 class TuneC:
   """Variant C wiring from the egmp block of CarController.update (100 Hz frames, tune every 5th) and create_can_msgs."""
-  def __init__(self, use_lead=True):
+  def __init__(self):
     from opendbc.car import structs
     from opendbc.car.hyundai import carcontroller as cc
     from openpilot.selfdrive.controls.lib import longitudinal_vehicle_tunes as lvt
-    self.cc, self.lvt, self.LCS, self.use_lead = cc, lvt, structs.CarControl.Actuators.LongControlState, use_lead
+    self.cc, self.lvt, self.LCS = cc, lvt, structs.CarControl.Actuators.LongControlState
     self.state = cc.Ioniq6LongitudinalTuningState()
 
   def step(self, f, accel_cmd, v, a, stopping, enabled, override, lead, dist):
@@ -95,8 +95,7 @@ class TuneC:
       self.state = st = self.cc.reset_egmp_longitudinal_tuning(st)
       use = False
     elif f % 5 == 0:
-      kw = {"lead_visible": lead, "lead_distance": dist} if self.use_lead else {}
-      self.state = st = self.cc.update_ioniq_6_longitudinal_tuning(st, accel_cmd, v, a, lcs, True, kia_stinger_2022=True, **kw)
+      self.state = st = self.cc.update_ioniq_6_longitudinal_tuning(st, accel_cmd, v, a, lcs, True, kia_stinger_2022=True)
     accel, jerk, lower = accel_cmd, today_upper(stopping), TODAY["jerk_lower"]
     if use:
       if lvt.KIA_STINGER_2022_SCC_URGENT_ACCEL < accel_cmd < st.actual_accel:
