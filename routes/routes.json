@@ -1,6 +1,6 @@
 {
  "dongle": "59fa1d41318b87d3",
- "generated": "2026-10-20 21:14 PDT",
+ "generated": "2026-10-20 21:20 PDT",
  "routes": [
   {
    "route": "59fa1d41318b87d3|00000001--97a0ab2a9f",
@@ -153,9 +153,12 @@
    "cruise_engaged_pct": 7,
    "rlog_segments": "",
    "tags": [
+    "stock-acc",
+    "highway",
+    "cut-in",
     "sunnypilot"
    ],
-   "notes": ""
+   "notes": "sunnypilot install but factory SCC (stock ACC). Two highway cut-ins ~1899 s and ~1914 s (seg 31): SUV then white sedan merged from the right; gaps 9 m and 6.8 m at 56-61 mph, driver braked on the second."
   },
   {
    "route": "59fa1d41318b87d3|00000014--cb06fd8d0c",
@@ -266,9 +269,11 @@
    "cruise_engaged_pct": 0,
    "rlog_segments": "",
    "tags": [
-    "sunnypilot"
+    "sunnypilot",
+    "near-miss",
+    "highway"
    ],
-   "notes": ""
+   "notes": "sunnypilot release-mici, camera-only long, tuning Off, experimental off, standard. Highway near-miss ~420 s (seg 6-7): camera put a slowing SUV at 85 m closing 2 m/s, then its range collapsed to 35 m; braked to -2.6 m/s^2 late, closest 8.2 m (0.35 s) at 51 mph."
   },
   {
    "route": "59fa1d41318b87d3|00000000--a033848cef",
