@@ -6,14 +6,14 @@
 # in a separate git worktree, leaving the main checkout untouched. Safe to re-run.
 #
 # Env:
-#   STINGER_DEV_HOME  where the venv, x86 worktree and logs live (default /home/user/starpilot-dev)
-#   STARPILOT_DIR     StarPilot checkout (default: first of /home/user/starpilot, /home/user/ervteng/starpilot,
+#   STINGER_DEV_HOME  where the venv, x86 worktree and logs live (default ~/stinger/starpilot-dev)
+#   STARPILOT_DIR     StarPilot checkout (default: ~/stinger/starpilot if present,
 #                     otherwise a fresh clone of ervteng/StarPilot into $STINGER_DEV_HOME/StarPilot)
 #   STARPILOT_REF     ref to check out in the x86 worktree (default stinger-radar-lfa)
 set -euo pipefail
 
 HERE=$(cd "$(dirname "$0")" && pwd)
-DEV=${STINGER_DEV_HOME:-/home/user/starpilot-dev}
+DEV=${STINGER_DEV_HOME:-$HOME/stinger/starpilot-dev}
 REF=${STARPILOT_REF:-stinger-radar-lfa}
 mkdir -p "$DEV/logs"
 
@@ -33,7 +33,7 @@ fi
 
 # 2. StarPilot checkout.
 if [ -z "${STARPILOT_DIR:-}" ]; then
-  for d in /home/user/starpilot /home/user/ervteng/starpilot; do
+  for d in "$HOME/stinger/starpilot"; do
     if git -C "$d" rev-parse --git-dir >/dev/null 2>&1; then STARPILOT_DIR=$d; break; fi
   done
 fi

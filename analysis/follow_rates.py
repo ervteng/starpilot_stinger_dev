@@ -18,7 +18,7 @@ import sys
 
 import numpy as np
 
-from logs import add_starpilot_path, pmap, segment_files, short, sorted_events
+from logs import TUNE_DIR, add_starpilot_path, pmap, segment_files, short, sorted_events
 import stock_mimic_check as S
 
 STOCK = S.DEFAULT_ROUTES
@@ -82,7 +82,7 @@ def main():
   p.add_argument("--stock", nargs="*", default=STOCK, help="stock-ACC drives (default: %(default)s)")
   p.add_argument("--openpilot", nargs="*", default=OPENPILOT, help="openpilot-long drives (default: %(default)s)")
   p.add_argument("--cache", help="npz cache of the stock samples (see stock_mimic_check.py)")
-  p.add_argument("--starpilot", default="/home/user/wt/stock-tune")
+  p.add_argument("--starpilot", default=TUNE_DIR)
   args = p.parse_args()
   add_starpilot_path(args.starpilot)
   print(f"percentiles {'/'.join(map(str, PCT))} of the accel change over {WINDOW} s, m/s^3")

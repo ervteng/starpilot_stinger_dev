@@ -20,7 +20,7 @@ import os
 
 import numpy as np
 
-from logs import pmap, sorted_events
+from logs import LOG_DIR, pmap, sorted_events
 
 SPEEDS_MPH = (25, 20, 15, 10, 5, 2)
 MPH = 2.237
@@ -108,7 +108,7 @@ def show(name, es):
 
 def main():
   p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-  p.add_argument("--logs", default=os.path.join(os.environ.get("STINGER_DEV_HOME", "/home/user/starpilot-dev"), "logs"))
+  p.add_argument("--logs", default=LOG_DIR)
   args = p.parse_args()
   by_route = collections.defaultdict(list)
   for f, out in pmap(segment, sorted(glob.glob(os.path.join(args.logs, "*--qlog.zst")))):

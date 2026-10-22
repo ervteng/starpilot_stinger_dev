@@ -32,7 +32,7 @@ import sys
 
 import numpy as np
 
-from logs import add_starpilot_path, pmap, seg_num, segment_files, short, sorted_events
+from logs import TUNE_DIR, add_starpilot_path, pmap, seg_num, segment_files, short, sorted_events
 from stock_mimic_check import TuneB, TuneC
 
 TUNES = ("A", "B", "C")
@@ -218,7 +218,7 @@ def main():
   p.add_argument("args", nargs="+", help="ROUTE SEG [SEG ...] KIND, or with --scan: ROUTE [ROUTE ...]")
   p.add_argument("--scan", action="store_true", help="all braking episodes of whole drives (rlogs)")
   p.add_argument("--threshold", type=float, default=-1.0, help="episode accel threshold (default %(default)s)")
-  p.add_argument("--starpilot", default="/home/user/wt/stock-tune", help="checkout with the tunes (default: %(default)s)")
+  p.add_argument("--starpilot", default=TUNE_DIR, help="checkout with the tunes (default: %(default)s)")
   args = p.parse_args()
   print(f"tunes from {add_starpilot_path(args.starpilot)}")
   if args.scan:

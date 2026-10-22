@@ -77,7 +77,7 @@ import numpy as np
 
 sys.dont_write_bytecode = True
 
-DEV = os.environ.get("STINGER_DEV_HOME", "/home/user/starpilot-dev")
+DEV = os.environ.get("STINGER_DEV_HOME", os.path.expanduser("~/stinger/starpilot-dev"))
 BUILD = os.environ.get("STARPILOT_BUILD", os.path.join(DEV, "x86"))
 HERE = os.path.dirname(os.path.abspath(__file__))
 for _p in (BUILD, os.path.join(BUILD, "opendbc_repo"), HERE):

@@ -19,7 +19,7 @@ import urllib.parse
 import urllib.request
 
 API = os.environ.get("COMMA_API", "https://api.commadotai.com")
-DEFAULT_OUT = os.path.join(os.environ.get("STINGER_DEV_HOME", "/home/user/starpilot-dev"), "logs")
+DEFAULT_OUT = os.path.join(os.environ.get("STINGER_DEV_HOME", os.path.expanduser("~/stinger/starpilot-dev")), "logs")
 FILE_KEYS = {"rlog": "logs", "qlog": "qlogs"}
 
 

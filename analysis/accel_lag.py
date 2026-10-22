@@ -19,7 +19,7 @@ import sys
 
 import numpy as np
 
-from logs import add_starpilot_path, pmap, segment_files, short, sorted_events
+from logs import TUNE_DIR, add_starpilot_path, pmap, segment_files, short, sorted_events
 
 DEFAULT_ROUTES = ["0000000d--5e0d1d244b", "0000000e--5ebf4636a1"]
 DT = 0.01
@@ -121,7 +121,7 @@ def main():
   p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
   p.add_argument("routes", nargs="*", default=DEFAULT_ROUTES, help="openpilot-long drives with rlogs (default: %(default)s)")
   p.add_argument("--carcontrol", action="store_true", help="use carControl actuators.accel instead of the sent SCC12 aReqValue")
-  p.add_argument("--starpilot", default="/home/user/wt/stock-tune", help="checkout whose opendbc decodes SCC12 (default: %(default)s)")
+  p.add_argument("--starpilot", default=TUNE_DIR, help="checkout whose opendbc decodes SCC12 (default: %(default)s)")
   args = p.parse_args()
   add_starpilot_path(args.starpilot)
   allch = []

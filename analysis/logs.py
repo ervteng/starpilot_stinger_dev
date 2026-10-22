@@ -10,13 +10,18 @@ from concurrent.futures import ProcessPoolExecutor
 import capnp
 import zstandard
 
-DEV = os.environ.get("STINGER_DEV_HOME", "/home/user/starpilot-dev")
+# Workspace base folder (see docs/LOCAL_SETUP.md): parent of $STARPILOT_DIR, else ~/stinger
+BASE = os.path.dirname(os.path.abspath(os.environ["STARPILOT_DIR"])) if os.environ.get("STARPILOT_DIR") \
+  else os.path.expanduser("~/stinger")
+DEV = os.environ.get("STINGER_DEV_HOME", os.path.join(BASE, "starpilot-dev"))
+# Checkout with slot 9 tunes B/C (branch stinger-stock-tune), used as the --starpilot default by the replay scripts
+TUNE_DIR = os.environ.get("STINGER_TUNE_DIR", os.path.join(BASE, "wt", "stock-tune"))
 LOG_DIR = os.path.join(DEV, "logs")
 DONGLE = os.environ.get("STINGER_DONGLE", "59fa1d41318b87d3")
 
 
 def _starpilot_dir() -> str:
-  for d in (os.environ.get("STARPILOT_DIR"), "/home/user/starpilot", "/home/user/ervteng/starpilot",
+  for d in (os.environ.get("STARPILOT_DIR"), os.path.join(BASE, "starpilot"),
             os.path.join(DEV, "x86"), os.path.join(DEV, "StarPilot")):
     if d and os.path.exists(os.path.join(d, "cereal", "log.capnp")):
       return d

@@ -3,7 +3,7 @@
 # Usage: run_tests.sh [ref] [pytest args...]
 #   ref defaults to stinger-radar-lfa; tests default to the Hyundai car tests + controls tests.
 set -euo pipefail
-DEV=${STINGER_DEV_HOME:-/home/user/starpilot-dev}
+DEV=${STINGER_DEV_HOME:-$HOME/stinger/starpilot-dev}
 W=$DEV/x86
 REF=${1:-stinger-radar-lfa}; shift || true
 

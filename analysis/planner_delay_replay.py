@@ -30,7 +30,7 @@ from collections import Counter, defaultdict
 
 import numpy as np
 
-DEV = os.environ.get("STINGER_DEV_HOME", "/home/user/starpilot-dev")
+DEV = os.environ.get("STINGER_DEV_HOME", os.path.expanduser("~/stinger/starpilot-dev"))
 BUILD = os.environ.get("STARPILOT_BUILD", os.path.join(DEV, "x86"))
 for p in (BUILD, os.path.join(BUILD, "opendbc_repo"), os.path.dirname(os.path.abspath(__file__))):
   if p not in sys.path:

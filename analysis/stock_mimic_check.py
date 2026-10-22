@@ -34,7 +34,7 @@ from types import SimpleNamespace
 
 import numpy as np
 
-from logs import add_starpilot_path, pmap, segment_files, short, sorted_events
+from logs import TUNE_DIR, add_starpilot_path, pmap, segment_files, short, sorted_events
 
 DEFAULT_ROUTES = ["0000001d--2ead59d2dd", "00000028--297af64c9c", "00000029--b3c2c13819", "00000034--5f8605e608"]
 JERK_TOL = 0.15
@@ -215,7 +215,7 @@ def print_table(title, r, outs, names=TUNES):
 def main():
   p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
   p.add_argument("routes", nargs="*", default=DEFAULT_ROUTES, help="stock-ACC drives with rlogs (default: %(default)s)")
-  p.add_argument("--starpilot", default="/home/user/wt/stock-tune", help="checkout with the tunes (default: %(default)s)")
+  p.add_argument("--starpilot", default=TUNE_DIR, help="checkout with the tunes (default: %(default)s)")
   p.add_argument("--include-stopping", action="store_true", help="keep samples where SCC12 StopReq is set")
   p.add_argument("--cache", help="npz file caching the extracted samples per route")
   args = p.parse_args()
