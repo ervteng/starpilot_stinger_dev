@@ -56,6 +56,10 @@ Usage: sim_stopped_lead.py scenarios [--personality standard,aggressive] [--dela
        sim_stopped_lead.py run --v0-mph 25 --gap 120 [--detect-dist 40] [--personality aggressive] [--delay 0.5] [--car-tune B] [--print-series] [--trace]
        sim_stopped_lead.py validate [--list] [--only B-11-1219] [--scan ROUTE ...] [--min-mph 15] [--variants] [--series DIR]
        sim_stopped_lead.py openloop ROUTE T0 T1
+Stopped-lead tune: --stopped-lead-tune A|B stubs Testing Ground slot 10 ("Stinger Stopped Lead", latched in LongitudinalPlanner.__init__; scenarios takes
+A,B); --tune-param NAME=VAL,... overrides KIA_STINGER_2022_STOPPED_LEAD_<NAME>; --lead-filter primed|fast (MPC lead filter state: a fresh planner has rc 0.8 s
+primed to v_ego+10, which delays the reaction to a late lead; after a drive above ~50 mph it is rc 0 = fast); --exp-no-close-cap is an experiment (see
+analysis/stopped_lead_results.md). A/B tables: stopped_lead_ab.py on a --series directory.
 Shared model options: --vision, --single-lead, --model plain|stop [--model-gap M], --model-lead const|oracle|off, --min-accel, --t-follow, --jerks.
 Needs the venv with StarPilot's built x86 tree (see README); the logs for validate (comma_dl.py).
 """
@@ -224,7 +228,7 @@ def make_plant_class():
   class _StingerPlant(Plant):
     def __init__(self, *, v0, gap0, set_speed, personality="standard", delay=0.5, car_tune="A", radar=True, detect_dist=None,
                  t_follow=None, jerks=None, min_accel=None, a0=0.0, model="plain", model_gap=None, two_leads=False, exp_mode=False,
-                 trace=False, model_lead="const", model_lead_range=80.0, **_):
+                 trace=False, model_lead="const", model_lead_range=80.0, stopped_lead_tune="A", lead_filter="primed", tune_params=None, exp_no_close_cap=False, **_):
       pid, tf, jk, mn = PERSONALITIES[personality]
       # Plant.__init__ opens msgq sockets that nothing here reads (and that break parallel runs): mark them as initialised and
       # stub the SubMaster, so only the bookkeeping of Plant (clock, filters, ratekeeper) is reused.
@@ -236,7 +240,22 @@ def make_plant_class():
       lp_mod.time = types.SimpleNamespace(monotonic=self.clock.monotonic, time=self.clock.time, sleep=_time.sleep)
       self.CP = stinger_cp(delay)
       self.toggles = stinger_toggles(delay)
-      self.planner = LongitudinalPlanner(self.CP, init_v=v0, init_a=a0)
+      # Testing Ground slot 10 ("Stinger Stopped Lead") is latched in LongitudinalPlanner.__init__ via testing_ground.use("10", "B"):
+      # stub the module-level name for the construction only (other slots fall through to the real, inactive, state).
+      for k, val in (tune_params or {}).items():     # e.g. TARGET_DECEL=1.3: overrides KIA_STINGER_2022_STOPPED_LEAD_<k> for this process
+        assert hasattr(tunes, "KIA_STINGER_2022_STOPPED_LEAD_" + k), k
+        setattr(tunes, "KIA_STINGER_2022_STOPPED_LEAD_" + k, float(val))
+      real_tg = lp_mod.testing_ground
+      lp_mod.testing_ground = SimpleNamespace(use=lambda slot, variant="B": (str(slot) == "10" and str(variant) == "B" and stopped_lead_tune == "B")
+                                              or (str(slot) != "10" and real_tg.use(slot, variant)))
+      try:
+        self.planner = LongitudinalPlanner(self.CP, init_v=v0, init_a=a0)
+      finally:
+        lp_mod.testing_ground = real_tg
+      if exp_no_close_cap:    # EXPERIMENT (proposal only, not in the planner): drop the generic close-lead brake push for stopped leads
+        orig_cap = self.planner.get_close_lead_brake_cap
+        self.planner.get_close_lead_brake_cap = lambda lead, v, am: None if float(lead.vLead) < 1.0 else orig_cap(lead, v, am)
+      assert self.planner.stinger_stopped_lead_tune == (stopped_lead_tune == "B")
       self.LoC = LongControl(self.CP)
       self.LoC.experimental_mode = exp_mode
       self.LoC.last_output_accel = a0
@@ -251,6 +270,11 @@ def make_plant_class():
       # Without an active lead the MPC feeds a fake fast lead (v_ego + 10) through its lead_v filter (rc 0.8 s), so a lead that appears
       # later is seen decaying from that value; the real planner has been in this state before every acquisition.
       self.planner.mpc.lead_v_filter.x = v0 + 10.0
+      if lead_filter == "fast":
+        # long_mpc recreates lead_a/v_filter with rc = 0 once the car has been below 47 mph after having been above ~51 mph
+        # (current_filter_time), i.e. in any drive that has seen a highway; the fresh planner keeps rc 0.8 s from __init__.
+        self.planner.mpc.lead_v_filter.update_alpha(0.0)
+        self.planner.mpc.lead_a_filter.update_alpha(0.0)
 
     def update_planner(self, sm):
       """planner.update; with trace=True also returns the source line of the last change and of the biggest drop of output_a_target."""
@@ -542,16 +566,19 @@ def write_series(path, tab, i0):
 
 def _opts(a):
   return dict(radar=not a.vision, model_lead=a.model_lead or ("off" if a.no_model_lead else "const"), model_lead_range=a.model_lead_range, model=a.model, model_gap=a.model_gap, min_accel=a.min_accel, t_follow=a.t_follow, trace=a.trace,
-              jerks=tuple(float(x) for x in a.jerks.split(",")) if a.jerks else None, two_leads=not a.single_lead)
+              jerks=tuple(float(x) for x in a.jerks.split(",")) if a.jerks else None, two_leads=not a.single_lead,
+              stopped_lead_tune=getattr(a, "stopped_lead_tune", "A"), lead_filter=a.lead_filter,
+              exp_no_close_cap=a.exp_no_close_cap,
+              tune_params=dict(kv.split("=") for kv in a.tune_param.split(",")) if a.tune_param else None)
 
 
 def cmd_scenarios(a):
   speeds = [float(x) for x in a.speeds_mph.split(",")]
   detects = [None if float(x) == 0 else float(x) for x in a.detect.split(",")]
   jobs = []
-  for pers, delay, tune, v, dd in itertools.product(a.personality.split(","), [float(x) for x in a.delay.split(",")],
-                                                    a.car_tune.split(","), speeds, detects):
-    jobs.append(dict(v0_mph=v, gap0=a.gap, detect_dist=dd, personality=pers, delay=delay, car_tune=tune, **_opts(a)))
+  for pers, delay, tune, slt, v, dd in itertools.product(a.personality.split(","), [float(x) for x in a.delay.split(",")],
+                                                         a.car_tune.split(","), a.stopped_lead_tune.split(","), speeds, detects):
+    jobs.append(dict(v0_mph=v, gap0=a.gap, detect_dist=dd, personality=pers, delay=delay, car_tune=tune, **{**_opts(a), "stopped_lead_tune": slt}))
   t0 = _time.time()
   if a.jobs > 1:
     with ProcessPoolExecutor(a.jobs) as ex:
@@ -562,23 +589,23 @@ def cmd_scenarios(a):
   print(f"<!-- {len(jobs)} runs in {_time.time() - t0:.0f} s -->", file=sys.stderr)
   if a.csv:
     import csv
-    cols = ["personality", "delay", "car_tune", "v0_mph", "detect_dist"] + [c for c, _, _ in METRIC_COLS] + ["stopped", "collision", "impact_mph"]
+    cols = ["personality", "delay", "car_tune", "slt", "v0_mph", "detect_dist"] + [c for c, _, _ in METRIC_COLS] + ["stopped", "collision", "impact_mph"]
     with open(a.csv, "w", newline="") as f:
       w = csv.writer(f)
       w.writerow(cols)
       for kw, m, _, _ in res:
-        w.writerow([kw["personality"], kw["delay"], kw["car_tune"], kw["v0_mph"], kw["detect_dist"] or 0] +
+        w.writerow([kw["personality"], kw["delay"], kw["car_tune"], kw["stopped_lead_tune"], kw["v0_mph"], kw["detect_dist"] or 0] +
                    [m.get(c, "") for c, _, _ in METRIC_COLS] + [m["stopped"], m["collision"], m.get("impact_mph", "")])
   if a.series:
     os.makedirs(a.series, exist_ok=True)
     for kw, m, tab, i0 in res:
-      name = f"{kw['personality']}_d{kw['delay']}_{kw['car_tune']}_v{int(kw['v0_mph'])}_det{int(kw['detect_dist'] or 0)}.csv"
+      name = f"{kw['personality']}_d{kw['delay']}_{kw['car_tune']}_slt{kw['stopped_lead_tune']}_v{int(kw['v0_mph'])}_det{int(kw['detect_dist'] or 0)}.csv"
       write_series(os.path.join(a.series, name), tab, i0)
   groups = {}
   for kw, m, _, _ in res:
-    groups.setdefault((kw["personality"], kw["delay"], kw["car_tune"]), []).append(((kw["v0_mph"], kw["detect_dist"] or "far"), m))
-  for (pers, delay, tune), rows in groups.items():
-    print(f"\n### {pers}, planner delay {delay}, car tune {tune}, {'vision' if a.vision else 'radar'} lead\n")
+    groups.setdefault((kw["personality"], kw["delay"], kw["car_tune"], kw["stopped_lead_tune"]), []).append(((kw["v0_mph"], kw["detect_dist"] or "far"), m))
+  for (pers, delay, tune, slt), rows in groups.items():
+    print(f"\n### {pers}, planner delay {delay}, car tune {tune}, stopped-lead tune {slt}, {'vision' if a.vision else 'radar'} lead\n")
     print(metrics_table(rows, ["mph", "detect m"]))
 
 
@@ -932,6 +959,14 @@ def main():
                    help="modelV2.leadsV3 content: const = lead keeps its speed (default; exact for a stopped lead), oracle = the lead's logged "
                         "future (validate only: what a perfect model would predict for a lead that is braking), off")
     p.add_argument("--model-lead-range", type=float, default=80.0, help="the vision model lead exists below this gap (m)")
+    p.add_argument("--stopped-lead-tune", default="A",
+                   help="Testing Ground slot 10 (Stinger Stopped Lead) A = installed, B = tune; scenarios takes a comma list")
+    p.add_argument("--tune-param", default=None,
+                   help="override KIA_STINGER_2022_STOPPED_LEAD_<NAME> constants for the run, e.g. TARGET_DECEL=1.3,FINAL_GAP_M=4.0")
+    p.add_argument("--exp-no-close-cap", action="store_true",
+                   help="experiment: planner.get_close_lead_brake_cap returns None for stopped leads (what binds the approach/creep)")
+    p.add_argument("--lead-filter", choices=("primed", "fast"), default="primed",
+                   help="MPC lead_v/a filter: primed = fresh planner (rc 0.8 s, primed to v_ego+10), fast = rc 0 as after a drive above ~50 mph")
     p.add_argument("--trace", action="store_true", help="record which planner line set output_a_target (slow; shown with --print-series)")
 
   s = sub.add_parser("scenarios")
