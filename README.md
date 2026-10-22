@@ -91,6 +91,7 @@ Run with the venv's Python from `analysis/`:
 | `tune_safety_replay.py ROUTE SEG... KIND` / `--scan ROUTE...` | replays logged openpilot braking through tunes A (today), B and C: peak, delay to -2/-3 m/s^2 and extra distance closer to the lead, for one hard brake or every braking episode of a drive |
 | `accel_lag.py [ROUTE...] [--carcontrol]` (rlog, openpilot long) | command -> aEgo lag of the sent accel: cross-correlation lag and delay + first-order tau (basis of longitudinalActuatorDelay) |
 | `follow_rates.py [--stock ROUTE...] [--openpilot ROUTE...]` (rlog) | rate of change of the accel command while following a lead, factory SCC vs openpilot long, for far-follow and any lead (basis of the planner slew / lead-follow jerk entries) |
+| `stopped_lead_approaches.py [--source all\|stock-rlog\|stock-qlog\|op] [--op-catalog] [--list] [--cache DIR] [--starpilot DIR]` (rlog stock ACC, qlog stock/openpilot) | approaches to a stationary lead, factory ACC vs openpilot tunes: onset gap/TTC, decel vs speed and gap, fitted decel = k v^2 / (2 (gap - g0)), creep and final gap, closing events by needed decel, with a per-approach list (route + seconds) |
 
 Routes can be short names (`0000000e--5ebf4636a1`); the dongle defaults to `$STINGER_DONGLE` (59fa1d41318b87d3).
 Scripts that decode CAN or run the radar decoder take opendbc from the StarPilot checkout (`--starpilot` to pick
