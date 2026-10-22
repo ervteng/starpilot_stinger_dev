@@ -92,6 +92,7 @@ Run with the venv's Python from `analysis/`:
 | `accel_lag.py [ROUTE...] [--carcontrol]` (rlog, openpilot long) | command -> aEgo lag of the sent accel: cross-correlation lag and delay + first-order tau (basis of longitudinalActuatorDelay) |
 | `follow_rates.py [--stock ROUTE...] [--openpilot ROUTE...]` (rlog) | rate of change of the accel command while following a lead, factory SCC vs openpilot long, for far-follow and any lead (basis of the planner slew / lead-follow jerk entries) |
 | `stopped_lead_approaches.py [--source all\|stock-rlog\|stock-qlog\|op] [--op-catalog] [--list] [--cache DIR] [--starpilot DIR]` (rlog stock ACC, qlog stock/openpilot) | approaches to a stationary lead, factory ACC vs openpilot tunes: onset gap/TTC, decel vs speed and gap, fitted decel = k v^2 / (2 (gap - g0)), creep and final gap, closing events by needed decel, with a per-approach list (route + seconds) |
+| `manual_stops.py [--logs DIR]` (qlog, every local route) | the driver's own stops behind a stopped / slow / slowing lead with no longitudinal control engaged: coast before braking, onset gap/TTC, decel vs speed, peak and where it falls, creep, final gap, fitted decel = k v^2 / (2 (gap - g0)) |
 
 Routes can be short names (`0000000e--5ebf4636a1`); the dongle defaults to `$STINGER_DONGLE` (59fa1d41318b87d3).
 Scripts that decode CAN or run the radar decoder take opendbc from the StarPilot checkout (`--starpilot` to pick
