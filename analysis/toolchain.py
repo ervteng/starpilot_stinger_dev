@@ -13,7 +13,7 @@ Run such scripts with the toolchain's venv python: `STINGER_TOOLCHAIN=sg ./run_p
 import os
 import sys
 
-TOOLCHAIN = os.environ.get("STINGER_TOOLCHAIN", "old")
+TOOLCHAIN = os.environ.get("STINGER_TOOLCHAIN") or "old"  # empty means old, like toolchain.sh
 if TOOLCHAIN not in ("old", "sg"):
   sys.exit(f"STINGER_TOOLCHAIN must be old or sg (got '{TOOLCHAIN}')")
 
