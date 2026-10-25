@@ -24,7 +24,7 @@ def load(path):
     w = e.which()
     if w == "carState":
       cs = e.carState
-      st.update(v=cs.vEgo, a=cs.aEgo, pedal=cs.brakePressed or cs.gasPressed)
+      st.update(v=cs.vEgo, a=cs.aEgo, pedal=cs.brakePressed or cs.gasPressed, cruise=cs.cruiseState.enabled)
       t0 = t0 or e.logMonoTime
     elif w == "carControl":
       st.update(cmd=e.carControl.actuators.accel, la=e.carControl.longActive)

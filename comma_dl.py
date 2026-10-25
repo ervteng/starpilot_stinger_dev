@@ -2,7 +2,7 @@
 """Download openpilot logs for a comma connect route.
 
 Usage:
-  comma_dl.py ROUTE [SEGMENTS] [--type rlog|qlog] [--out DIR] [--list]
+  comma_dl.py ROUTE [SEGMENTS] [--type rlog|qlog|qcamera|fcamera] [--out DIR] [--list]
 
   ROUTE     "dongle|route" or "dongle/route", e.g. 59fa1d41318b87d3|00000004--51331d19d5
   SEGMENTS  "all" (default), "5", "4-7", or "0,3,6"
@@ -20,7 +20,7 @@ import urllib.request
 
 API = os.environ.get("COMMA_API", "https://api.commadotai.com")
 DEFAULT_OUT = os.path.join(os.environ.get("STINGER_DEV_HOME", os.path.expanduser("~/stinger/starpilot-dev")), "logs")
-FILE_KEYS = {"rlog": "logs", "qlog": "qlogs"}
+FILE_KEYS = {"rlog": "logs", "qlog": "qlogs", "qcamera": "qcameras", "fcamera": "cameras"}
 
 
 def api_get(path: str):

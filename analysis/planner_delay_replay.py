@@ -112,7 +112,7 @@ def parse_delay(spec):
   return (float(a), float(c)) if c else (float(a), float(a))
 
 
-def replay(frames, cp, delay, tracer=True):
+def replay(frames, cp, delay, tracer=True, dump=None, sync_filters=False, testing_ground=None):
   from cereal import car
   from openpilot.starpilot.common.starpilot_variables import process_starpilot_toggles
   import openpilot.selfdrive.controls.lib.longitudinal_planner as lp
@@ -126,11 +126,27 @@ def replay(frames, cp, delay, tracer=True):
   code = lp.LongitudinalPlanner.update.__code__
   if action_d != caps_d:
     CP = CPProxy(CP, action_d, caps_d, code)
+  forced = {tuple(x.split(":")) for x in (testing_ground or "").split(",") if x}
+  if forced:  # opt-in --testing-ground SLOT:VARIANT: those read as active (latched at construction) in the planner and in longitudinal_vehicle_tunes
+    import openpilot.selfdrive.controls.lib.longitudinal_vehicle_tunes as vt
+    real = lp.testing_ground
+    fake = types.SimpleNamespace(use=lambda slot, variant="B": (str(slot), str(variant)) in forced or
+                                 (str(slot) not in {x for x, _ in forced} and real.use(slot, variant)))
+    lp.testing_ground = fake
+    vt.testing_ground = fake
+    if hasattr(vt, "_kia_stinger_2022_tune_latch"):
+      vt._kia_stinger_2022_tune_latch.clear()
   planner = lp.LongitudinalPlanner(CP)
+  if forced:
+    print(f"testing-ground {testing_ground}: far_follow_brake/release_slew_rate = "
+          f"{planner.far_follow_brake_slew_rate}/{planner.far_follow_release_slew_rate}", flush=True)
+  if sync_filters:  # what-if (monkeypatch only, tree untouched): keep lead_a/v filters tracking the radar lead on the model-lead path
+    planner.mpc.sync_model_lead_filters = True
 
   src = open(lp.__file__).read().splitlines()
   state = {}
   changes = []
+  dbg = _install_dump_hooks(planner, lp) if dump else None
 
   def local_trace(frame, event, arg):
     if event == "line":
@@ -141,13 +157,19 @@ def replay(frames, cp, delay, tracer=True):
           state["last"] = v
       state["prev"] = frame.f_lineno
     elif event == "return":
+      if dbg is not None and dbg.get("rec") is not None:
+        dbg["planner_locals"] = {k: frame.f_locals.get(k) for k in PLANNER_LOCALS}
       v = frame.f_locals.get("output_a_target")
       if v is not None and v != state.get("last"):
         changes.append((state["prev"], float(v)))
     return local_trace
 
   def global_trace(frame, event, arg):
-    return local_trace if frame.f_code is code else None
+    if frame.f_code is code:
+      return local_trace
+    if dbg is not None and frame.f_code is dbg["mpc_update_code"]:
+      return dbg["mpc_local_trace"]
+    return None
 
   out = []
   for i, fr in enumerate(frames):
@@ -155,6 +177,10 @@ def replay(frames, cp, delay, tracer=True):
     sm = FakeSM(fr["sm"], fr["t"], i)
     toggles = process_starpilot_toggles(fr["toggles"])
     state.clear(); changes.clear()
+    in_dump = bool(dump) and dump[0] <= fr["route_t"] <= dump[1]
+    if dbg is not None:
+      dbg["rec"] = {} if in_dump else None
+      dbg["planner_locals"] = {}
     if tracer:
       sys.settrace(global_trace)
     try:
@@ -173,10 +199,202 @@ def replay(frames, cp, delay, tracer=True):
       log_a=float(fr["log"].aTarget), log_stop=bool(fr["log"].shouldStop), log_src=str(fr["log"].longitudinalPlanSource),
       log_a0=float(fr["log"].accels[0]), seg=fr["seg"], aego=float(cs.aEgo), chg=list(changes),
       e2e=float(fr["sm"]["modelV2"].action.desiredAcceleration), exp=bool(fr["sm"]["selfdriveState"].experimentalMode),
+      ffa=bool(planner.far_follow_output_slew_active), ffs=float(planner.far_follow_brake_slew_rate),
       tf=float(fr["sm"]["starpilotPlan"].tFollow), prob=float(lead.modelProb), minacc=float(fr["sm"]["starpilotPlan"].minAcceleration),
       model_stop=bool(fr["sm"]["modelV2"].action.shouldStop), forcing=bool(fr["sm"]["starpilotPlan"].forcingStop)))
+    if in_dump:
+      out[-1]["dump"] = _collect_dump(planner, fr, dbg, changes)
   labels = {ln: src[ln - 1].strip() for r in out for ln in (r["final"], r["minline"]) if ln}
   return out, labels
+
+
+PLANNER_LOCALS = ("v_cruise", "effective_t_follow", "lead_control_active", "lead_one_active", "tracking_lead", "experimental_mode",
+                  "uncertainty", "panic_bypass", "stopped_lead_obstacle_bias", "force_stop_x", "prev_accel_constraint",
+                  "accel_limits_turns", "scene_v_ego", "early_truck_follow", "nonurgent_duplicate_vision_follow",
+                  "steady_follow_filter_floor", "output_a_target_mpc", "output_a_target")
+MPC_LOCALS = ("lead_0_obstacle", "lead_1_obstacle", "cruise_obstacle", "x_obstacles", "prev_source", "candidate_source",
+              "sticky_source", "v_cruise_clipped", "lead_0_bias", "lead_1_bias")
+OBS_IDX = (0, 1, 2, 3, 4, 6, 8, 10, 12)
+
+
+def _install_dump_hooks(planner, lp):
+  """Opt-in (--dump): record MPC inputs/outputs by wrapping the planner's MPC methods. Does not change any value."""
+  import openpilot.selfdrive.controls.lib.longitudinal_mpc_lib.long_mpc as lm
+  mpc = planner.mpc
+  dbg = dict(rec=None, planner_locals={}, mpc_update_code=type(mpc).update.__code__, resets=0)
+
+  def mpc_local_trace(frame, event, arg):
+    if event == "return" and dbg["rec"] is not None:
+      dbg["rec"]["mpc_locals"] = {k: (np.array(v, copy=True) if isinstance(v, np.ndarray) else v)
+                                  for k, v in ((k, frame.f_locals.get(k)) for k in MPC_LOCALS)}
+    return mpc_local_trace
+  dbg["mpc_local_trace"] = mpc_local_trace
+
+  def wrap(obj, name, grab):
+    orig = getattr(obj, name)
+    def w(*a, **k):
+      if dbg["rec"] is not None:
+        grab(a, k)
+      return orig(*a, **k)
+    setattr(obj, name, w)
+
+  wrap(mpc, "set_weights", lambda a, k: dbg["rec"].__setitem__("set_weights", dict(k)))
+  wrap(mpc, "set_accel_limits", lambda a, k: dbg["rec"].__setitem__("accel_limits", tuple(a)))
+  wrap(mpc, "update", lambda a, k: dbg["rec"].__setitem__("update_args", dict(
+    v_cruise=a[1], danger_factor=a[5], t_follow=a[6], **{kk: k[kk] for kk in ("personality", "tracking_lead", "stop_x",
+    "lead_obstacle_bias", "smooth_duplicate_vision", "silverado_early_follow", "optional_far_lead_comfort") if kk in k})))
+
+  orig_pl = mpc.process_lead
+  def pl(lead, *a, **k):
+    li = k.get("lead_index", 0)
+    used = {"m": False}
+    orig_b = lm.build_model_lead_trajectory
+    def b(*aa, **kk):
+      r = orig_b(*aa, **kk)
+      used["m"] = r is not None
+      return r
+    lm.build_model_lead_trajectory = b
+    try:
+      r = orig_pl(lead, *a, **k)
+    finally:
+      lm.build_model_lead_trajectory = orig_b
+    if dbg["rec"] is not None:
+      ml = k.get("model_lead")
+      dbg["rec"][f"lead{li}"] = dict(
+        from_model_path=used["m"], active=bool(lead.status) and bool(a[0] if a else k.get("tracking_lead", True)),
+        radar=dict(dRel=float(lead.dRel), vLead=float(lead.vLead), aLeadK=float(lead.aLeadK), aLeadTau=float(lead.aLeadTau),
+                   radar=bool(lead.radar), status=bool(lead.status), yRel=float(lead.yRel), modelProb=float(lead.modelProb)),
+        model_lead=None if ml is None else dict(prob=float(ml.prob), x0=float(ml.x[0]), v0=float(ml.v[0]), a0=float(ml.a[0]) if len(ml.a) else None),
+        xv=np.array(r, copy=True),
+        filt=dict(a=float(mpc.lead_a_filter.x), v=float(mpc.lead_v_filter.x), tau=float(mpc.lead_a_filter.alpha) if hasattr(mpc.lead_a_filter, "alpha") else None))
+    return r
+  mpc.process_lead = pl
+
+  orig_reset = mpc.reset
+  def rs(*a, **k):
+    dbg["resets"] += 1
+    if dbg["rec"] is not None:
+      dbg["rec"]["reset_called"] = True
+    return orig_reset(*a, **k)
+  mpc.reset = rs
+  orig_run = mpc.run
+  def run(*a, **k):
+    if dbg["rec"] is not None:
+      dbg["rec"]["x0"] = np.array(mpc.x0, copy=True)
+      dbg["rec"]["params"] = np.array(mpc.params, copy=True)
+      dbg["rec"]["mode"] = mpc.mode
+      dbg["rec"]["cruise_min_a"], dbg["rec"]["max_a"] = float(mpc.cruise_min_a), float(mpc.max_a)
+    r = orig_run(*a, **k)
+    if dbg["rec"] is not None:
+      dbg["rec"]["solution_status"] = int(mpc.solution_status)
+      dbg["rec"]["solve_time"] = float(mpc.solve_time)
+      dbg["rec"]["a_sol"] = np.array(mpc.a_solution, copy=True) if mpc.solution_status == 0 else None
+    return r
+  mpc.run = run
+  return dbg
+
+
+def _plain(v):
+  """Make a value picklable (capnp enums / readers -> str)."""
+  if v is None or isinstance(v, (bool, int, float, str)):
+    return v
+  if isinstance(v, np.ndarray):
+    return v.copy()
+  if isinstance(v, (tuple, list)):
+    return type(v)(_plain(x) for x in v)
+  if isinstance(v, np.generic):
+    return v.item()
+  return str(v)
+
+
+def _collect_dump(planner, fr, dbg, changes):
+  rec = dbg["rec"]
+  mpc = planner.mpc
+  for key in ("update_args", "set_weights", "planner_locals_tmp"):
+    if key in rec:
+      rec[key] = {k: _plain(v) for k, v in rec[key].items()}
+  # a_solution/v_solution as of the solve (reset() inside run() zeroes them on a failed solve)
+  rec["a_solution_final"] = np.array(mpc.a_solution, copy=True)
+  rec["v_solution_final"] = np.array(mpc.v_solution, copy=True)
+  rec["x_sol"] = np.array(mpc.x_sol, copy=True)
+  rec["crash_cnt"] = float(mpc.crash_cnt)
+  rec["source"] = mpc.source
+  rec["planner_locals"] = {k: _plain(v) for k, v in dbg["planner_locals"].items()}
+  rec["chg"] = list(changes)
+  rec["resets_total"] = dbg["resets"]
+  rec["a_desired"] = float(planner.a_desired)
+  rec["plan_flags"] = dict(redLight=bool(fr["sm"]["starpilotPlan"].redLight), forcingStop=bool(fr["sm"]["starpilotPlan"].forcingStop),
+                           dangerFactor=float(fr["sm"]["starpilotPlan"].dangerFactor), tFollow=float(fr["sm"]["starpilotPlan"].tFollow),
+                           vCruise=float(fr["sm"]["starpilotPlan"].vCruise), accelJerk=float(fr["sm"]["starpilotPlan"].accelerationJerk),
+                           dangerJerk=float(fr["sm"]["starpilotPlan"].dangerJerk), speedJerk=float(fr["sm"]["starpilotPlan"].speedJerk),
+                           minAccel=float(fr["sm"]["starpilotPlan"].minAcceleration))
+  return rec
+
+
+def _fmt(a, idx=OBS_IDX):
+  return "[" + " ".join(f"{float(a[i]):.1f}" for i in idx) + "]"
+
+
+def dump_report(results, args, labels):
+  """Per-cycle table (and with --dump-full a full block per cycle) for the first replay (the logged delay)."""
+  T0, T1 = args.dump
+  d0, r0, _ = results[0]
+  rows = [r for r in r0 if "dump" in r]
+  print(f"\n== dump {T0}-{T1} s, delay {d0}: {len(rows)} cycles; obstacle/xv indices {OBS_IDX} = t "
+        f"{[round(float(i), 1) for i in __import__('numpy').array(_tidx())[list(OBS_IDX)]]} s ==")
+  print("   t       aOut  logA  src   stat solve_ms crash a_sol[0..5]                      L0.dRel  vRel  aLead  mdl0 | obs0(lead0) cruise(0,4,8)    | final L  mpc-> out")
+  for r in rows:
+    d = r["dump"]
+    l0 = d.get("lead0", {})
+    ra = l0.get("radar", {})
+    a_sol = d["a_solution_final"]
+    mloc = d.get("mpc_locals", {})
+    obs0 = mloc.get("lead_0_obstacle"); cr = mloc.get("cruise_obstacle")
+    print(f"  {r['t']:7.2f} {r['a']:6.2f} {r['log_a']:6.2f} {r['src']:5s} {d.get('solution_status', -1):3d} {d.get('solve_time', 0) * 1e3:7.2f} "
+          f"{d['crash_cnt']:4.0f}  [{' '.join(f'{x:5.2f}' for x in a_sol[:6])}] "
+          f"{ra.get('dRel', float('nan')):7.2f} {ra.get('vLead', 0) - r['v']:6.2f} {ra.get('aLeadK', 0):6.2f}  {'M' if l0.get('from_model_path') else 'r'}   | "
+          f"{obs0[0] if obs0 is not None else float('nan'):6.1f} "
+          f"{(cr[0] if cr is not None else float('nan')):6.1f} {(cr[4] if cr is not None else float('nan')):6.1f} {(cr[8] if cr is not None else float('nan')):6.1f} "
+          f"| L{r['final']}{' reset' if d.get('reset_called') else ''}")
+  if getattr(args, "dump_full", False):
+    for r in rows:
+      _print_block(r, labels)
+
+
+def _tidx():
+  from openpilot.selfdrive.controls.lib.longitudinal_mpc_lib.long_mpc import T_IDXS
+  return T_IDXS
+
+
+def _print_block(r, labels):
+  d = r["dump"]
+  print(f"\n-- cycle t={r['t']:.2f} seg{r['seg']} aOut={r['a']:.3f} (log {r['log_a']:.3f}) mode={d.get('mode')} src={d['source']} "
+        f"status={d.get('solution_status')} solve={d.get('solve_time', 0) * 1e3:.2f}ms crash_cnt={d['crash_cnt']} reset={d.get('reset_called', False)} "
+        f"resets_total={d['resets_total']}")
+  print(f"   x0={np.round(d['x0'], 3).tolist()} (x, v, a)  cruise_min_a={d['cruise_min_a']:.3f} max_a={d['max_a']:.3f} params ACCEL_MIN/max_a={d['params'][0, 0]:.2f}/{d['params'][0, 1]:.2f}")
+  print(f"   update_args={ {k: (np.round(v, 3).tolist() if hasattr(v, 'tolist') else v) for k, v in d.get('update_args', {}).items()} }")
+  print(f"   set_weights={ {k: (round(v, 4) if isinstance(v, float) else v) for k, v in d.get('set_weights', {}).items()} } accel_limits={d.get('accel_limits')}")
+  print(f"   starpilotPlan={d['plan_flags']}")
+  pl = d["planner_locals"]
+  print("   planner locals: " + ", ".join(f"{k}={(round(v, 3) if isinstance(v, float) else v)}" for k, v in pl.items() if k not in ('output_a_target', 'output_a_target_mpc') and v is not None))
+  for li in (0, 1):
+    L = d.get(f"lead{li}")
+    if L:
+      print(f"   lead{li}: active={L['active']} model-trajectory-path={L['from_model_path']} radar={ {k: round(v, 3) if isinstance(v, float) else v for k, v in L['radar'].items()} } "
+            f"model_lead={L['model_lead']} filt={L['filt']}")
+      print(f"           xv x={_fmt(L['xv'][:, 0])} v={_fmt(L['xv'][:, 1])}")
+  m = d.get("mpc_locals", {})
+  for k in ("lead_0_obstacle", "lead_1_obstacle", "cruise_obstacle"):
+    if m.get(k) is not None:
+      print(f"   {k} {_fmt(m[k])}")
+  print(f"   prev_source={m.get('prev_source')} candidate={m.get('candidate_source')} sticky={m.get('sticky_source')} -> source {d['source']}; "
+        f"params[:,2]=min obstacle {_fmt(d['params'][:, 2])}")
+  print(f"   a_solution[0..5]={np.round(d['a_solution_final'][:6], 3).tolist()} a_sol idx {_fmt(d['a_solution_final'])}")
+  print(f"   v_solution idx {_fmt(d['v_solution_final'])}  x_sol[:,0] idx {_fmt(d['x_sol'][:, 0])}")
+  chg = " -> ".join(f"L{ln}:{v:.3f}" for ln, v in d["chg"])
+  print(f"   post-processing (line: output_a_target): {chg}")
+  for ln in {ln for ln, _ in d["chg"]}:
+    print(f"      L{ln}: {labels.get(ln, '')}")
 
 
 
@@ -214,10 +432,19 @@ def main():
   ap.add_argument("--events", type=float, nargs="*", default=list(EVENTS), help="route seconds of hard-braking events")
   ap.add_argument("--window", type=float, default=8.0, help="seconds around each event (+/-)")
   ap.add_argument("--sp-lag", type=int, default=0, help="use starpilotPlan this many cycles old (race between processes)")
+  ap.add_argument("--dump", type=float, nargs=2, metavar=("T0", "T1"), help="opt-in debug: per-cycle MPC input/output table for route seconds T0..T1")
+  ap.add_argument("--dump-full", action="store_true", help="with --dump: also print a full multi-line block per cycle")
+  ap.add_argument("--load", help="with --dump: re-print from a pickle written by --save instead of replaying")
+  ap.add_argument("--sync-filters", action="store_true", help="what-if: set mpc.sync_model_lead_filters=True (in memory) to test the stale-filter fix")
   ap.add_argument("--save", help="pickle the per-frame results here")
+  ap.add_argument("--testing-ground", default=None, help="opt-in: SLOT:VARIANT[,..] read as active in the planner (e.g. 9:B for the Stinger far-follow slew)")
   ap.add_argument("--worker", help=argparse.SUPPRESS)
   ap.add_argument("--check-only", action="store_true", help="only replay the first delay and print the log match")
   args = ap.parse_args()
+  if args.load:
+    results = pickle.load(open(args.load, "rb"))
+    dump_report(results, args, {**results[0][2], **(results[1][2] if len(results) > 1 else {})})
+    return
   lo, _, hi = args.segments.partition("-")
   segs = list(range(int(lo), int(hi or lo) + 1))
 
@@ -226,7 +453,7 @@ def main():
     frames, cp = load_frames(args.route, segs, args.sp_lag)
     print(f"{len(frames)} planner cycles, route t {frames[0]['route_t']:.1f}..{frames[-1]['route_t']:.1f}; "
           f"logged CP delay {cp.longitudinalActuatorDelay}, fingerprint {cp.carFingerprint}", flush=True)
-    out, labels = replay(frames, cp, args.worker)
+    out, labels = replay(frames, cp, args.worker, dump=tuple(args.dump) if args.dump else None, sync_filters=args.sync_filters, testing_ground=args.testing_ground)
     pickle.dump((args.worker, out, labels), open(args.save, "wb"))
     return
   # fork-after-import hangs (acados/capnp threads), so each delay runs in its own process
@@ -238,6 +465,12 @@ def main():
     f = os.path.join(tmp, f"r{d.replace(':', '_')}.pkl")
     cmd = [sys.executable, "-I", os.path.abspath(__file__), args.route, "--segments", args.segments, "--sp-lag", str(args.sp_lag),
            "--worker", d, "--save", f]
+    if args.dump:
+      cmd += ["--dump", str(args.dump[0]), str(args.dump[1])]
+    if args.sync_filters:
+      cmd += ["--sync-filters"]
+    if args.testing_ground:
+      cmd += ["--testing-ground", args.testing_ground]
     procs.append((f, subprocess.Popen(cmd)))
   for f, p in procs:
     assert p.wait() == 0, "worker failed"
@@ -245,6 +478,8 @@ def main():
   if args.save:
     pickle.dump(results, open(args.save, "wb"))
   report(results, args)
+  if args.dump:
+    dump_report(results, args, {**results[0][2], **(results[1][2] if len(results) > 1 else {})})
 
 
 def report(results, args):

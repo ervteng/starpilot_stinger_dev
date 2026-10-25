@@ -222,13 +222,34 @@ class CarSide:
 
 
 # ------------------------------------------------------------------ the plant
+# --exp-crv-cap: the CR-V cap's gates and shape (below 4.5 m/s, lead < 0.5 m/s within 12 m, 85 % of the decel to the stop point), with
+# radar leads allowed, the stop point at the slot-10 final gap (KIA_STINGER_2022_STOPPED_LEAD_FINAL_GAP_M) instead of 6 m, and the
+# ceiling at the driver's follow stops (1.1-1.3 m/s^2 at 15-5 mph, manual_stops.py) instead of 0.45
+CRAWL_CAP_MAX_EGO, CRAWL_CAP_MAX_LEAD_V, CRAWL_CAP_MAX_DIST, CRAWL_CAP_GAIN = 4.5, 0.5, 12.0, 0.85
+CRAWL_CAP_MIN_DECEL, CRAWL_CAP_MAX_DECEL = 0.12, 1.2
+
+
+def stinger_crawl_cap(CP, lead, v_ego, accel_min):
+  if lead is None or not bool(getattr(lead, "status", False)) or not 0.0 < float(v_ego) <= CRAWL_CAP_MAX_EGO:
+    return None
+  if not bool(getattr(lead, "radar", False)) and float(getattr(lead, "modelProb", 0.0)) < 0.99:
+    return None
+  g0 = tunes.KIA_STINGER_2022_STOPPED_LEAD_FINAL_GAP_M
+  lead_v, dist = max(float(lead.vLead), 0.0), float(lead.dRel)
+  if (lead_v > CRAWL_CAP_MAX_LEAD_V or float(getattr(lead, "aLeadK", 0.0)) > 0.25 or not g0 + 0.5 <= dist <= CRAWL_CAP_MAX_DIST or
+      float(v_ego) - lead_v < 0.15 or abs(float(getattr(lead, "yRel", 0.0))) > 1.75):
+    return None
+  required = float(v_ego) ** 2 / (2.0 * max(dist - g0, 0.5))
+  return max(float(accel_min), -float(np.clip(required * CRAWL_CAP_GAIN, CRAWL_CAP_MIN_DECEL, CRAWL_CAP_MAX_DECEL)))
+
+
 def make_plant_class():
   """Plant subclass with the Stinger CP, StarPilot-like starpilotPlan, real LongControl and the measured car response (built after the
   openpilot imports, which need the x86 tree)."""
   class _StingerPlant(Plant):
     def __init__(self, *, v0, gap0, set_speed, personality="standard", delay=0.5, car_tune="A", radar=True, detect_dist=None,
                  t_follow=None, jerks=None, min_accel=None, a0=0.0, model="plain", model_gap=None, two_leads=False, exp_mode=False,
-                 trace=False, model_lead="const", model_lead_range=80.0, stopped_lead_tune="A", lead_filter="primed", tune_params=None, exp_no_close_cap=False, **_):
+                 trace=False, model_lead="const", model_lead_range=80.0, stopped_lead_tune="A", lead_filter="primed", tune_params=None, exp_no_close_cap=False, exp_crv_cap=False, testing_ground=None, radard_lead=False, **_):
       pid, tf, jk, mn = PERSONALITIES[personality]
       # Plant.__init__ opens msgq sockets that nothing here reads (and that break parallel runs): mark them as initialised and
       # stub the SubMaster, so only the bookkeeping of Plant (clock, filters, ratekeeper) is reused.
@@ -246,15 +267,37 @@ def make_plant_class():
         assert hasattr(tunes, "KIA_STINGER_2022_STOPPED_LEAD_" + k), k
         setattr(tunes, "KIA_STINGER_2022_STOPPED_LEAD_" + k, float(val))
       real_tg = lp_mod.testing_ground
-      lp_mod.testing_ground = SimpleNamespace(use=lambda slot, variant="B": (str(slot) == "10" and str(variant) == "B" and stopped_lead_tune == "B")
-                                              or (str(slot) != "10" and real_tg.use(slot, variant)))
+      # opt-in --testing-ground SLOT:VARIANT[,SLOT:VARIANT]: those slot/variants read as active (e.g. 9:B latches the Stinger far-follow slew)
+      forced = {tuple(x.split(":")) for x in (testing_ground or "").split(",") if x}
+      fake_tg = SimpleNamespace(use=lambda slot, variant="B": (str(slot) == "10" and str(variant) == "B" and stopped_lead_tune == "B")
+                                or ((str(slot), str(variant)) in forced)
+                                or (str(slot) != "10" and (str(slot) not in {s for s, _ in forced}) and real_tg.use(slot, variant)))
+      lp_mod.testing_ground = fake_tg
+      vt_has_tg = hasattr(tunes, "testing_ground")
+      if forced:   # longitudinal_vehicle_tunes (once it reads the Stinger slot 9) latches the tune per process: reset it
+        real_vt_tg = getattr(tunes, "testing_ground", None)
+        tunes.testing_ground = fake_tg
+        if hasattr(tunes, "_kia_stinger_2022_tune_latch"):
+          tunes._kia_stinger_2022_tune_latch.clear()
       try:
         self.planner = LongitudinalPlanner(self.CP, init_v=v0, init_a=a0)
       finally:
         lp_mod.testing_ground = real_tg
+        if forced:
+          if vt_has_tg:
+            tunes.testing_ground = real_vt_tg
+          else:
+            del tunes.testing_ground
+          # the Stinger tune latch is deliberately LEFT populated: get_kia_stinger_2022_stock_tune(CP) is read again at run time by the
+          # close-lead-cap / dynamic t_follow hooks, and clearing it here would re-latch them from the real (inactive) Testing Ground.
+          # It is cleared at the top of the next forced construction.
+      self.far_follow_slew = (self.planner.far_follow_brake_slew_rate, self.planner.far_follow_release_slew_rate)
       if exp_no_close_cap:    # EXPERIMENT (proposal only, not in the planner): drop the generic close-lead brake push for stopped leads
         orig_cap = self.planner.get_close_lead_brake_cap
         self.planner.get_close_lead_brake_cap = lambda lead, v, am: None if float(lead.vLead) < 1.0 else orig_cap(lead, v, am)
+      # EXPERIMENT (proposal only, not in the planner): a Stinger copy of the CR-V low-speed stopped-lead cap in the slot the planner
+      # already calls for every car (get_honda_crv_5g_low_speed_stopped_lead_cap)
+      lp_mod.get_honda_crv_5g_low_speed_stopped_lead_cap = stinger_crawl_cap if exp_crv_cap else tunes.get_honda_crv_5g_low_speed_stopped_lead_cap
       assert self.planner.stinger_stopped_lead_tune == (stopped_lead_tune == "B")
       self.LoC = LongControl(self.CP)
       self.LoC.experimental_mode = exp_mode
@@ -267,6 +310,12 @@ def make_plant_class():
       self.a_ego = a0
       self.model, self.model_gap, self.two_leads, self.trace = model, model_gap, two_leads, trace
       self.model_lead, self.model_lead_range, self.lead_track = model_lead, model_lead_range, None
+      # opt-in --radard-lead (library use): aLeadK / aLeadTau / vLeadK from radard's own Kalman filter + tau rule (see Track.update),
+      # fed the lead's true speed (no radar noise); default (False) keeps the instantaneous aLeadK and fixed tau.
+      self.radard = None
+      if radard_lead:
+        from openpilot.selfdrive.controls.radard import KalmanParams as _KP, Track as _Track
+        self.radard = _Track(0, float(v0), _KP(DT_PLAN))   # the real radard Track (KF1D + aLeadTau rule), created at the lead's speed
       # Without an active lead the MPC feeds a fake fast lead (v_ego + 10) through its lead_v filter (rc 0.8 s), so a lead that appears
       # later is seen decaying from that value; the real planner has been in this state before every acquisition.
       self.planner.mpc.lead_v_filter.x = v0 + 10.0
@@ -315,6 +364,12 @@ def make_plant_class():
       a_lead = (v_lead - self.v_lead_prev) / DT_PLAN
       self.v_lead_prev = v_lead
       v_obs, a_obs = (v_lead, a_lead) if lead_obs is None else lead_obs
+      tau_obs = float(_LEAD_ACCEL_TAU)
+      if self.radard is not None:     # radard's Track.update on the true lead (noise-free radar), once per planner step
+        tr = self.radard
+        tr.update(float(max(0.0, self.distance_lead - self.distance)), 0.0, float(v_lead - self.speed), float(v_lead), True)
+        v_obs, a_obs, tau_obs = float(v_lead), float(tr.aLeadK), float(tr.aLeadTau.x)
+        vk_obs = float(tr.vLeadK)
 
       radar = messaging.new_message("radarState")
       car_state = messaging.new_message("carState")
@@ -331,9 +386,9 @@ def make_plant_class():
         lead.vRel = float(v_obs - self.speed)
         lead.aRel = float(a_obs - self.a_ego)
         lead.vLead = float(v_obs)
-        lead.vLeadK = float(v_obs)
+        lead.vLeadK = float(v_obs) if self.radard is None else vk_obs
         lead.aLeadK = float(a_obs)
-        lead.aLeadTau = float(_LEAD_ACCEL_TAU)
+        lead.aLeadTau = tau_obs
         lead.status = True
         lead.radar = bool(self.radar)
         lead.modelProb = 1.0 if self.radar else 0.9
@@ -522,6 +577,7 @@ def run_sim(v0_mph=25.0, gap0=120.0, detect_dist=None, personality="standard", d
   m = metrics(sl["t"], sl["gap"], sl["v"], sl["a"])
   m["collision"] = bool(tab["gap"][-1] < 0.3)
   m["impact_mph"] = float(tab["v"][-1] * MPH) if m["collision"] else np.nan
+  m["ff_brake_slew"] = plant.far_follow_slew[0]
   return tab, i0, m
 
 
@@ -567,8 +623,8 @@ def write_series(path, tab, i0):
 def _opts(a):
   return dict(radar=not a.vision, model_lead=a.model_lead or ("off" if a.no_model_lead else "const"), model_lead_range=a.model_lead_range, model=a.model, model_gap=a.model_gap, min_accel=a.min_accel, t_follow=a.t_follow, trace=a.trace,
               jerks=tuple(float(x) for x in a.jerks.split(",")) if a.jerks else None, two_leads=not a.single_lead,
-              stopped_lead_tune=getattr(a, "stopped_lead_tune", "A"), lead_filter=a.lead_filter,
-              exp_no_close_cap=a.exp_no_close_cap,
+              stopped_lead_tune=getattr(a, "stopped_lead_tune", "A"), lead_filter=a.lead_filter, testing_ground=a.testing_ground,
+              exp_no_close_cap=a.exp_no_close_cap, exp_crv_cap=a.exp_crv_cap,
               tune_params=dict(kv.split("=") for kv in a.tune_param.split(",")) if a.tune_param else None)
 
 
@@ -587,6 +643,8 @@ def cmd_scenarios(a):
     _import_stack()
     res = [_job(j) for j in jobs]
   print(f"<!-- {len(jobs)} runs in {_time.time() - t0:.0f} s -->", file=sys.stderr)
+  if a.testing_ground:
+    print(f"<!-- testing-ground {a.testing_ground}: planner far_follow_brake_slew_rate seen in the runs: {sorted({m['ff_brake_slew'] for _, m, _, _ in res})} -->", file=sys.stderr)
   if a.csv:
     import csv
     cols = ["personality", "delay", "car_tune", "slt", "v0_mph", "detect_dist"] + [c for c, _, _ in METRIC_COLS] + ["stopped", "collision", "impact_mph"]
@@ -965,8 +1023,11 @@ def main():
                    help="override KIA_STINGER_2022_STOPPED_LEAD_<NAME> constants for the run, e.g. TARGET_DECEL=1.3,FINAL_GAP_M=4.0")
     p.add_argument("--exp-no-close-cap", action="store_true",
                    help="experiment: planner.get_close_lead_brake_cap returns None for stopped leads (what binds the approach/creep)")
+    p.add_argument("--exp-crv-cap", action="store_true",
+                   help="experiment: a Stinger copy of the CR-V low-speed stopped-lead cap (radar leads, slot-10 final gap, 1.2 m/s^2 ceiling)")
     p.add_argument("--lead-filter", choices=("primed", "fast"), default="primed",
                    help="MPC lead_v/a filter: primed = fresh planner (rc 0.8 s, primed to v_ego+10), fast = rc 0 as after a drive above ~50 mph")
+    p.add_argument("--testing-ground", default=None, help="opt-in: SLOT:VARIANT[,..] read as active in the planner (e.g. 9:B for the Stinger far-follow slew)")
     p.add_argument("--trace", action="store_true", help="record which planner line set output_a_target (slow; shown with --print-series)")
 
   s = sub.add_parser("scenarios")
