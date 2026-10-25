@@ -21,6 +21,7 @@ import sys
 
 import numpy as np
 
+import toolchain
 from logs import add_starpilot_path, pmap, seg_num, segment_files, short, sorted_events
 
 RADAR_TO_CAMERA = 1.52
@@ -30,9 +31,7 @@ MPH = 2.23694
 def scan(path):
   from opendbc.can import CANParser  # before the first log read, so logs.py reuses its schema
   from opendbc.car import gen_empty_fingerprint
-  from opendbc.car.hyundai.interface import CarInterface
   from opendbc.car.hyundai.radar_interface import RadarInterface
-  from opendbc.car.hyundai.values import CAR
 
   evs = sorted_events(path)
   fp = gen_empty_fingerprint()
@@ -41,8 +40,8 @@ def scan(path):
       for c in e.can:
         if c.src < 3:
           fp[c.src][c.address] = len(c.dat)
-  ri = RadarInterface(CarInterface.get_params(CAR.KIA_STINGER_2022, fp, [], True, False, False, None))
-  p = CANParser("hyundai_kia_generic", [("SCC11", 0)], 0)
+  ri = RadarInterface(toolchain.stinger_car_params(fp))
+  p = CANParser(toolchain.stinger_pt_dbc(), [("SCC11", 0)], 0)
   t0 = evs[0].logMonoTime
   base = seg_num(path) * 60.0
   out = {"ego": [], "radar": [], "lead": [], "cam": [], "scc": [], "long": []}

@@ -21,7 +21,9 @@ KPH_TO_MS = 1 / 3.6
 
 def load_decoder(path):
   src = open(path).read()
-  block = src[src.index("STINGER_2022_RADAR_BUS ="):src.index("@dataclass(frozen=True)\nclass RadarTrackConfig")]
+  # the decoder block ends where the old fork's RadarTrackConfig begins, or where SG's blended_track_radar() begins
+  end = min(src.index(m) for m in ("@dataclass(frozen=True)\nclass RadarTrackConfig", "def blended_track_radar") if m in src)
+  block = src[src.index("STINGER_2022_RADAR_BUS ="):end]
   ns = {"math": math, "dataclass": dataclass}
   exec(block, ns)
   return ns

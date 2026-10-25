@@ -12,6 +12,7 @@ from collections import defaultdict
 
 import numpy as np
 
+import toolchain
 from logs import add_starpilot_path, pmap, segment_files, short, sorted_events
 
 
@@ -19,7 +20,7 @@ def scan(job):
   path, max_lat = job
   from opendbc.can import CANParser  # before the first log read, so logs.py reuses its schema
   from opendbc.car.hyundai.radar_interface import Stinger2022ObjectDecoder
-  p = CANParser("hyundai_kia_generic", [("WHL_SPD11", 0)], 0)
+  p = CANParser(toolchain.stinger_pt_dbc(), [("WHL_SPD11", 0)], 0)
   dec = Stinger2022ObjectDecoder(); hist = defaultdict(list); out = []
   for e in sorted_events(path):
     if e.which() != "can":

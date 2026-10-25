@@ -67,7 +67,7 @@ Which tools care about the layout:
 
 - Log-only (`highway_brakes`, `alerts`, `lateral_tracking`, `route_scan`, ...): identical under both. Tools that decode CAN
   through opendbc use the selected tree's opendbc; `--starpilot DIR` / hard-coded old checkouts resolve to the sg tree under `sg`.
-  Ones that need fork-only opendbc content (`radar_*` Stinger decoder, `brake_blend`'s `hyundai_kia_generic` DBC, ...)
+  The `radar_*` tools run under sg once x86-sg is at a tree with the Stinger decoder (branch `sg-kia-stinger-2022-radar`; `analysis/stinger_radar_equiv.py` diffs its RadarInterface against the old fork's, frame by frame). Ones that need other fork-only opendbc content (`brake_blend`'s `hyundai_kia_generic` DBC, ...)
   stop with a message naming what the sg tree lacks.
 - `sim_stopped_lead.py run|scenarios` and `planner_delay_replay.py` run against both planners. Under `sg` they drive the real SG
   `LongitudinalPlanner` (`update(sm)` with default, personality-based profile; vision-lead path via `sg_compat.ModelLeadFeed`) with

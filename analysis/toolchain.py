@@ -83,6 +83,24 @@ def require_sg_port(what: str, missing: str):
     sys.exit(f"{what} is not ported to STINGER_TOOLCHAIN=sg yet: {missing}. Run it with STINGER_TOOLCHAIN=old.")
 
 
+# ------------------------------------------------------------------ Stinger CarParams / DBC (radar tools)
+def stinger_car_params(fingerprint, alpha_long: bool = True):
+  """CarParams for KIA_STINGER_2022 from the selected tree's CarInterface (call after the tree is on sys.path).
+
+  The old tree's get_params takes a trailing starpilot_toggles argument, SG's does not."""
+  from opendbc.car.hyundai.interface import CarInterface
+  from opendbc.car.hyundai.values import CAR
+  extra = () if SG else (None,)
+  return CarInterface.get_params(CAR.KIA_STINGER_2022, fingerprint, [], alpha_long, False, False, *extra)
+
+
+def stinger_pt_dbc() -> str:
+  """Powertrain DBC name of the Stinger 2022: 'hyundai_kia_generic' in the old tree, 'hyundai_can_generated' in SG (same signals)."""
+  from opendbc.car import Bus
+  from opendbc.car.hyundai.values import CAR, DBC
+  return DBC[CAR.KIA_STINGER_2022][Bus.pt]
+
+
 # ------------------------------------------------------------------ log schema
 # Drive logs were written by the OLD build, and the sg cereal schema is not wire-compatible with them (Event union members were
 # renamed / reused: starpilotPlan @113 is customReserved6 there, liveParameters is vehicleParameters, RadarState.LeadData.status is
