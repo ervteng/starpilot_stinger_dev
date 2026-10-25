@@ -32,6 +32,52 @@ git clone https://github.com/ervteng/starpilot_stinger_dev /home/user/starpilot_
 /home/user/starpilot_stinger_dev/setup_x86.sh
 ```
 
+## Toolchains (old / SecretGood)
+
+Two independent builds can sit side by side; `STINGER_TOOLCHAIN=old|sg` (default `old`) picks one for every script.
+Logs in `$STINGER_DEV_HOME/logs` are shared. Switch at any time, nothing is rebuilt or re-checked-out by switching.
+
+| | `old` (default) | `sg` (SecretGoodStarPilot) |
+|---|---|---|
+| code layout | repo root (`selfdrive/`, `cereal/`, ...) | under `openpilot/` (`openpilot/selfdrive/`, ...), opendbc / msgq at the root |
+| build tree | `$STINGER_DEV_HOME/x86` (worktree, default ref `stinger-radar-lfa`) | `$STINGER_DEV_HOME/x86-sg` (worktree, default ref `upstream/SecretGoodStarPilot`) |
+| venv | `$STINGER_DEV_HOME/venv`, pinned from `requirements.txt` | `$STINGER_DEV_HOME/venv-sg`, from SG's own `uv.lock` (`uv sync --extra dev`) plus the `requirements.txt` extras it lacks (casadi, hypothesis, ...) |
+| natives | params, transformations, msgq/visionipc, pandad, long MPC (`scons --minimal`) | `libparams_c`, msgq/visionipc, opendbc `_raw_value`, long MPC (transformations and pandad_api are pure Python there); no apt packages needed, zmq/capnp/acados come from `comma-deps-*` wheels |
+| `sys.path` | tree, `opendbc_repo` | tree, `msgq_repo`, `opendbc_repo`, `rednose_repo`, `panda` (SG's `dev-mode-dirs` + editable installs) |
+
+```bash
+./setup_x86.sh                                    # old, as before
+STINGER_TOOLCHAIN=sg ./setup_x86.sh               # builds x86-sg + venv-sg (first time ~2 min)
+STINGER_TOOLCHAIN=sg ./run_tests.sh upstream/SecretGoodStarPilot openpilot/selfdrive/controls/tests opendbc_repo/opendbc/car/hyundai/tests
+STINGER_TOOLCHAIN=sg ./run_py.sh analysis/planner_delay_replay.py 00000015--2b757ccb00 --segments 29-30 --events 1836.5 --window 3
+```
+
+`run_py.sh` runs a script with the selected toolchain's venv python; the planner tools need it under `sg` (the old venv lacks SG's
+deps). The selector lives in `toolchain.sh` (shell) and `analysis/toolchain.py` (python): build dir, venv, import paths, and the
+layout, which is auto-detected from the build tree (`openpilot/cereal/log.capnp` present = sg; the old layout also has an
+`openpilot/` dir, of symlinks). `STARPILOT_BUILD` overrides the build tree, `STARPILOT_DIR` is the clone worktrees are created from.
+
+**Logs are always read with the old schema.** SG's cereal schema is not wire-compatible with logs written by the old build
+(renamed/reused Event union members, `RadarState.LeadData.status` is `present`, ...). Under `sg`, `analysis/logs.py` therefore
+loads an ID-remapped copy of the old schema (cached in `$STINGER_DEV_HOME/schema-old-remap/`, source `$STINGER_DEV_HOME/x86/cereal`
+or `STINGER_LOG_SCHEMA=<dir>`), because capnp aborts when both schemas share type IDs in one process. Log-only tools give the
+same output under both toolchains.
+
+Which tools care about the layout:
+
+- Log-only (`highway_brakes`, `alerts`, `lateral_tracking`, `route_scan`, ...): identical under both. Tools that decode CAN
+  through opendbc use the selected tree's opendbc; `--starpilot DIR` / hard-coded old checkouts resolve to the sg tree under `sg`.
+  Ones that need fork-only opendbc content (`radar_*` Stinger decoder, `brake_blend`'s `hyundai_kia_generic` DBC, ...)
+  stop with a message naming what the sg tree lacks.
+- `sim_stopped_lead.py run|scenarios` and `planner_delay_replay.py` run against both planners. Under `sg` they drive the real SG
+  `LongitudinalPlanner` (`update(sm)` with default, personality-based profile; vision-lead path via `sg_compat.ModelLeadFeed`) with
+  old-log inputs converted to the SG schema. The sim has car tune A only. The replay is of an old-build log, so its match with the
+  logged `longitudinalPlan` is poor by construction: the starpilot-side inputs (profile, force stop, ceilings) are not in the SG call.
+- Old only, exit with a clear message under `sg`: car tunes B/C, `--stopped-lead-tune B`, `--testing-ground`, `--tune-param`,
+  `--exp-*`, `--lead-filter fast`, `--t-follow/--jerks/--min-accel`, `sim_stopped_lead.py validate|openloop`, `planner_delay_replay.py
+  --dump/--sync-filters/--approach`, `stock_mimic_check.py`, `tune_safety_replay.py`, `sustained_lead_brake.py run`. They need
+  Testing Grounds, `longitudinal_vehicle_tunes` or `starpilot_variables`, which the new layout removed.
+
 ## Tests
 
 ```bash

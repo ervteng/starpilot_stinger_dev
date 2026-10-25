@@ -18,4 +18,7 @@ cd "$W"
 export PYTHONPATH=$TC_PYTHONPATH
 TESTS=("$@")
 [ ${#TESTS[@]} -eq 0 ] && TESTS=("${TC_TESTS[@]}")
-exec "$PY" -m pytest -q -n 8 -p no:cacheprovider "${TESTS[@]}"
+# 8 xdist workers unless the caller passes its own -n (e.g. -n 0: pytest-subtests with enum/CAR params cannot cross xdist workers in sg)
+NJ=(-n 8)
+for a in "${TESTS[@]}"; do case "$a" in -n|-n[0-9]*|--numprocesses|--numprocesses=*) NJ=();; esac; done
+exec "$PY" -m pytest -q "${NJ[@]}" -p no:cacheprovider "${TESTS[@]}"
