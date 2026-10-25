@@ -123,3 +123,17 @@ def remapped_log_schema_dir() -> str:
       import shutil
       shutil.rmtree(tmp, ignore_errors=True)
   return out
+
+
+def _sg_import_hint(exc_type, exc, tb):
+  """Under sg, an ImportError from the build tree usually means a fork-only module (Stinger radar decoder, tunes, Testing Grounds)."""
+  sys.__excepthook__(exc_type, exc, tb)
+  if (issubclass(exc_type, ImportError) and ("opendbc" in str(exc) or "openpilot" in str(exc) or "cereal" in str(exc))) \
+      or (issubclass(exc_type, FileNotFoundError) and "DBC not found" in str(exc)):
+    print(f"\nSTINGER_TOOLCHAIN=sg: the SecretGoodStarPilot tree ({BUILD}) does not have what this tool needs ({exc}). "
+          f"It depends on code only the old layout has; run it with STINGER_TOOLCHAIN=old. (If instead the venv is wrong, use "
+          f"run_py.sh, which selects {PYTHON}.)", file=sys.stderr)
+
+
+if SG:
+  sys.excepthook = _sg_import_hint

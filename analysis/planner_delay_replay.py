@@ -30,13 +30,20 @@ from collections import Counter, defaultdict
 
 import numpy as np
 
-DEV = os.environ.get("STINGER_DEV_HOME", os.path.expanduser("~/stinger/starpilot-dev"))
-BUILD = os.environ.get("STARPILOT_BUILD", os.path.join(DEV, "x86"))
-for p in (BUILD, os.path.join(BUILD, "opendbc_repo"), os.path.dirname(os.path.abspath(__file__))):
-  if p not in sys.path:
-    sys.path.insert(0, p)
+HERE = os.path.dirname(os.path.abspath(__file__))
+if HERE not in sys.path:
+  sys.path.insert(0, HERE)
+import toolchain  # noqa: E402  (STINGER_TOOLCHAIN=old|sg; old: $STINGER_DEV_HOME/x86, sg: x86-sg)
 
-from cereal import log as _cereal_log  # noqa: E402,F401  (load the capnp schema once, before logs.py would)
+DEV = toolchain.DEV
+BUILD = toolchain.BUILD
+toolchain.setup_paths(extra=(HERE,))
+
+if toolchain.SG:
+  # the logs are read with the old schema (logs.py); the planner and its inputs are the SG ones (sg_compat.convert)
+  import sg_compat  # noqa: E402
+else:
+  from cereal import log as _cereal_log  # noqa: E402,F401  (load the capnp schema once, before logs.py would)
 import logs  # noqa: E402
 
 DEFAULT_ROUTE = "00000011--c7d29db317"
@@ -89,7 +96,7 @@ def load_frames(route, segments, sp_lag=0):
         if sp_lag:
           d["starpilotPlan"] = sp_hist[max(0, len(sp_hist) - 1 - sp_lag)]
         frames.append(dict(t=e.logMonoTime, route_t=logs.route_time(f, e.logMonoTime, seg0), sm=d, toggles=toggles_text,
-                           log=e.longitudinalPlan, seg=seg))
+                           log=e.longitudinalPlan, seg=seg, mono={s: latest[s + "_t"] for s in SERVICES}))
   return frames, cp
 
 
@@ -112,7 +119,15 @@ def parse_delay(spec):
   return (float(a), float(c)) if c else (float(a), float(a))
 
 
+# sg: the logged services the SG planner reads, as (SG service name, logged service name); everything else it needs is a default
+SG_SERVICES = (("carState", "carState"), ("carControl", "carControl"), ("controlsState", "controlsState"),
+               ("vehicleParameters", "liveParameters"), ("radarState", "radarState"), ("modelV2", "modelV2"),
+               ("selfdriveState", "selfdriveState"))
+
+
 def replay(frames, cp, delay, tracer=True, dump=None, sync_filters=False, testing_ground=None):
+  if toolchain.SG:
+    return replay_sg(frames, cp, delay, tracer, dump, sync_filters, testing_ground)
   from cereal import car
   from openpilot.starpilot.common.starpilot_variables import process_starpilot_toggles
   import openpilot.selfdrive.controls.lib.longitudinal_planner as lp
@@ -205,6 +220,112 @@ def replay(frames, cp, delay, tracer=True, dump=None, sync_filters=False, testin
     if in_dump:
       out[-1]["dump"] = _collect_dump(planner, fr, dbg, changes)
   labels = {ln: src[ln - 1].strip() for r in out for ln in (r["final"], r["minline"]) if ln}
+  return out, labels
+
+
+def replay_sg(frames, cp, delay, tracer=True, dump=None, sync_filters=False, testing_ground=None):
+  """replay() for the SecretGoodStarPilot planner (STINGER_TOOLCHAIN=sg).
+
+  The logs are from the old build: its inputs are converted to the SG schema (sg_compat.convert), and the SG planner is called with
+  update(sm) and no StarPilot-side options (no profile / cruise ceiling / force-stop / lane-change providers, which in the real car
+  come from the starpilot planner and its toggles, not from anything in these logs). So the replay follows the SG planner's own
+  defaults and its match with the logged (old-build) longitudinalPlan is expected to be poor. The vision-lead path of the MPC is fed
+  from the logged modelV2 whose time radarState.mdMonoTime names (sg_compat.ModelLeadFeed), standing in for the real-clock-gated
+  qualified_model_leads.
+  """
+  if testing_ground:
+    toolchain.require_old("--testing-ground")
+  if sync_filters:
+    toolchain.require_old("--sync-filters (mpc.sync_model_lead_filters)")
+  if dump:
+    toolchain.require_sg_port("--dump", "it wraps the old MPC's set_weights / update / process_lead signatures; the SG MPC has set_cost_weights / "
+                              "update(radarstate, personality, *, follow_seconds, acceleration_max, stop_line_m, modelV2)")
+  import openpilot.cereal.messaging as messaging
+  from opendbc.car.hyundai.interface import CarInterface  # noqa: F401  (loads the SG opendbc before the planner)
+  import openpilot.selfdrive.controls.lib.longitudinal_planner as lp
+  import openpilot.selfdrive.controls.lib.longitudinal_mpc_lib.long_mpc as lm
+  logging.disable(logging.CRITICAL)
+
+  clock = [0.0]
+  clock_ns = sg_compat.patch_planner_clock(lp, lm, lambda: clock[0])
+  action_d, caps_d = parse_delay(delay)
+  from opendbc.car.structs import CarParams
+  CP = CarParams.new_message()
+  sg_compat.convert(cp, CP)
+  CP.longitudinalActuatorDelay = caps_d
+  code = lp.LongitudinalPlanner.update.__code__
+  if action_d != caps_d:
+    CP = CPProxy(CP, action_d, caps_d, code)
+  src_names = {int(v): k for k, v in lm.LongitudinalPlanSource.schema.enumerants.items()}   # enum ints -> the names the log has
+  feed = sg_compat.ModelLeadFeed()
+  lp.qualified_model_leads = feed
+  planner = lp.LongitudinalPlanner(CP, clock_ns=clock_ns)
+
+  src = open(lp.__file__).read().splitlines()
+  state = {}
+  changes = []
+
+  def local_trace(frame, event, arg):
+    if event == "line":
+      if state.get("prev") is not None:
+        v = frame.f_locals.get("output_a_target")
+        if v is not None and v != state.get("last"):
+          changes.append((state["prev"], float(v)))
+          state["last"] = v
+      state["prev"] = frame.f_lineno
+    elif event == "return":
+      v = frame.f_locals.get("output_a_target")
+      if v is not None and v != state.get("last"):
+        changes.append((state["prev"], float(v)))
+    return local_trace
+
+  def global_trace(frame, event, arg):
+    return local_trace if frame.f_code is code else None
+
+  conv_cache = {}
+
+  def sg_service(name, old_name, fr):
+    key = (name, fr["mono"][old_name])
+    if key not in conv_cache:
+      if len(conv_cache) > 64:
+        conv_cache.clear()
+      _, sb = sg_compat.new_service(messaging, name, fr["sm"][old_name])
+      conv_cache[key] = sb.as_reader()
+    return conv_cache[key]
+
+  out = []
+  for i, fr in enumerate(frames):
+    clock[0] = fr["t"] / 1e9
+    d = {name: sg_service(name, old_name, fr) for name, old_name in SG_SERVICES}
+    # the logged radarState's modelV2 reference (mdMonoTime) must find that model frame: keep the converted model under its log time
+    feed.observe(fr["mono"]["modelV2"], d["modelV2"])
+    sm = sg_compat.SgSM(d, {**fr["mono"], "vehicleParameters": fr["mono"]["liveParameters"]}, i)
+    state.clear(); changes.clear()
+    if tracer:
+      sys.settrace(global_trace)
+    try:
+      planner.update(sm, now_ns=int(fr["t"]))
+    finally:
+      sys.settrace(None)
+    cs, lead = fr["sm"]["carState"], fr["sm"]["radarState"].leadOne
+    final = changes[-1][0] if changes else 0
+    drops = [(changes[k][1] - (changes[k - 1][1] if k else changes[k][1]), changes[k][0]) for k in range(len(changes))]
+    minline = min(drops)[1] if drops and min(drops)[0] < -1e-3 else 0
+    out.append(dict(
+      t=fr["route_t"], a=float(planner.output_a_target), stop=bool(planner.output_should_stop), src=src_names.get(int(planner.mpc.source), str(planner.mpc.source)),
+      a0=float(planner.a_desired_trajectory[0]), plan_a=changes[0][1] if changes else np.nan,
+      final=final, minline=minline, v=float(cs.vEgo), vcruise=float(fr["sm"]["starpilotPlan"].vCruise),
+      lead=bool(lead.status), d=float(lead.dRel), vl=float(lead.vLead), al=float(lead.aLeadK), radar=bool(lead.radar),
+      log_a=float(fr["log"].aTarget), log_stop=bool(fr["log"].shouldStop), log_src=str(fr["log"].longitudinalPlanSource),
+      log_a0=float(fr["log"].accels[0]), seg=fr["seg"], aego=float(cs.aEgo), chg=list(changes),
+      e2e=float(fr["sm"]["modelV2"].action.desiredAcceleration), exp=bool(fr["sm"]["selfdriveState"].experimentalMode),
+      ffa=False, ffs=float("nan"),
+      tf=float(fr["sm"]["starpilotPlan"].tFollow), prob=float(lead.modelProb), minacc=float(fr["sm"]["starpilotPlan"].minAcceleration),
+      model_stop=bool(fr["sm"]["modelV2"].action.shouldStop), forcing=bool(fr["sm"]["starpilotPlan"].forcingStop)))
+  labels = {ln: src[ln - 1].strip() for r in out for ln in (r["final"], r["minline"]) if ln}
+  if any("DEPRECATED" not in k for _, k in sg_compat.NOT_CONVERTED):
+    print("note: old-log fields with no SG counterpart were dropped: " +
+          ", ".join(f"{n}.{k} x{c}" for (n, k), c in sorted(sg_compat.NOT_CONVERTED.items()) if "DEPRECATED" not in k)[:600], flush=True)
   return out, labels
 
 
@@ -441,6 +562,16 @@ def main():
   ap.add_argument("--worker", help=argparse.SUPPRESS)
   ap.add_argument("--check-only", action="store_true", help="only replay the first delay and print the log match")
   args = ap.parse_args()
+  if toolchain.SG:    # fail fast, before any worker starts (replay_sg checks again)
+    if args.testing_ground:
+      toolchain.require_old("--testing-ground")
+    if args.sync_filters:
+      toolchain.require_old("--sync-filters (mpc.sync_model_lead_filters)")
+    if args.dump or args.dump_full:
+      toolchain.require_sg_port("--dump", "it wraps the old MPC's set_weights / update / process_lead; the SG MPC has set_cost_weights / "
+                                "update(radarstate, personality, *, follow_seconds, acceleration_max, stop_line_m, modelV2)")
+    if args.approach:
+      toolchain.require_sg_port("--approach", "long_mpc.desired_follow_distance no longer exists in the SG MPC")
   if args.load:
     results = pickle.load(open(args.load, "rb"))
     dump_report(results, args, {**results[0][2], **(results[1][2] if len(results) > 1 else {})})
@@ -530,7 +661,10 @@ def binder(r, labels):
 
 
 def approach_report(results, labels, T0, T1):
-  from openpilot.selfdrive.controls.lib.longitudinal_mpc_lib.long_mpc import desired_follow_distance
+  try:
+    from openpilot.selfdrive.controls.lib.longitudinal_mpc_lib.long_mpc import desired_follow_distance
+  except ImportError:
+    toolchain.require_sg_port("--approach", "long_mpc.desired_follow_distance no longer exists in the SG MPC")
   print(f"\n== approach {T0:.0f}-{T1:.0f} s (logged car motion; lead gap = radarState.leadOne.dRel) ==")
   r0 = results[0][1]
   t = np.array([r["t"] for r in r0])

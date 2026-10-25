@@ -34,6 +34,7 @@ from types import SimpleNamespace
 
 import numpy as np
 
+import toolchain
 from logs import TUNE_DIR, add_starpilot_path, pmap, segment_files, short, sorted_events
 
 DEFAULT_ROUTES = ["0000001d--2ead59d2dd", "00000028--297af64c9c", "00000029--b3c2c13819", "00000034--5f8605e608"]
@@ -219,6 +220,7 @@ def main():
   p.add_argument("--include-stopping", action="store_true", help="keep samples where SCC12 StopReq is set")
   p.add_argument("--cache", help="npz file caching the extracted samples per route")
   args = p.parse_args()
+  toolchain.require_old("stock_mimic_check.py (needs openpilot.selfdrive.controls.lib.longitudinal_vehicle_tunes: the Stinger tune B/C shaping)")
   print(f"tunes from {add_starpilot_path(args.starpilot)}")
   samples = []; outs = []
   for route in args.routes:

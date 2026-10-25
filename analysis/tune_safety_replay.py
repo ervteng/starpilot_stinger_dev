@@ -32,6 +32,7 @@ import sys
 
 import numpy as np
 
+import toolchain
 from logs import TUNE_DIR, add_starpilot_path, pmap, seg_num, segment_files, short, sorted_events
 from stock_mimic_check import TuneB, TuneC
 
@@ -220,6 +221,7 @@ def main():
   p.add_argument("--threshold", type=float, default=-1.0, help="episode accel threshold (default %(default)s)")
   p.add_argument("--starpilot", default=TUNE_DIR, help="checkout with the tunes (default: %(default)s)")
   args = p.parse_args()
+  toolchain.require_old("tune_safety_replay.py (needs openpilot.selfdrive.controls.lib.longitudinal_vehicle_tunes: the Stinger tune B/C shaping)")
   print(f"tunes from {add_starpilot_path(args.starpilot)}")
   if args.scan:
     alleps = []

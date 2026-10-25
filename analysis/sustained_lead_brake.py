@@ -23,6 +23,7 @@ import numpy as np
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
+import toolchain  # noqa: E402
 import sim_stopped_lead as S  # noqa: E402
 
 MPH = S.MPH
@@ -247,6 +248,8 @@ def main():
   q.add_argument("after")
   q.add_argument("--out", required=True)
   a = p.parse_args()
+  if a.cmd == "run":
+    toolchain.require_old("sustained_lead_brake.py run (forces Testing Ground 9:B and car tune B: Testing Grounds / longitudinal_vehicle_tunes)")
   {"run": cmd_run, "report": cmd_report}[a.cmd](a)
 
 

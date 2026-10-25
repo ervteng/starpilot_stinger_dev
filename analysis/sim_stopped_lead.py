@@ -77,12 +77,14 @@ import numpy as np
 
 sys.dont_write_bytecode = True
 
-DEV = os.environ.get("STINGER_DEV_HOME", os.path.expanduser("~/stinger/starpilot-dev"))
-BUILD = os.environ.get("STARPILOT_BUILD", os.path.join(DEV, "x86"))
 HERE = os.path.dirname(os.path.abspath(__file__))
-for _p in (BUILD, os.path.join(BUILD, "opendbc_repo"), HERE):
-  if _p not in sys.path:
-    sys.path.insert(0, _p)
+if HERE not in sys.path:
+  sys.path.insert(0, HERE)
+import toolchain  # noqa: E402  (STINGER_TOOLCHAIN=old|sg; old: $STINGER_DEV_HOME/x86, sg: x86-sg)
+
+DEV = toolchain.DEV
+BUILD = toolchain.BUILD
+toolchain.setup_paths(extra=(HERE,))
 
 MPH = 2.23694
 DT_PLAN = 0.05           # DT_MDL
@@ -104,8 +106,35 @@ ACTUATOR_DELAY_S = 0.20   # accel_lag.py on this car
 ACTUATOR_TAU_S = 0.30
 
 
+def _import_stack_sg():
+  """_import_stack for the SecretGoodStarPilot tree (STINGER_TOOLCHAIN=sg): the planner / MPC / LongControl APIs it still has."""
+  global LongitudinalPlanner, LongControl, LongCtrlState, CarInterface, CAR, lp_mod, lm_mod, ACCEL_MIN, ACCEL_MAX, STOP_DISTANCE
+  global _LEAD_ACCEL_TAU, log, messaging, ModelConstants, LongitudinalContext, sg_compat
+  global Plant, should_track_lead, should_hold_tracked_vision_lead, THRESHOLD, tunes, ccm
+  import sg_compat as _sgc
+  import openpilot.cereal.messaging as _messaging
+  from openpilot.cereal import log as _log
+  from opendbc.car.hyundai.interface import CarInterface as _CI
+  from opendbc.car.hyundai.values import CAR as _CAR
+  from opendbc.car.interfaces import ACCEL_MAX as _AMAX, ACCEL_MIN as _AMIN
+  from openpilot.selfdrive.controls.lib.longcontrol import LongControl as _LC, LongCtrlState as _LCS
+  from openpilot.selfdrive.controls.lib import longitudinal_planner as _lp
+  from openpilot.selfdrive.controls.lib.longitudinal_mpc_lib import long_mpc as _lm
+  from openpilot.selfdrive.controls.radard import _LEAD_ACCEL_TAU as _TAU
+  from openpilot.selfdrive.modeld.constants import ModelConstants as _MC
+  from openpilot.starpilot.longitudinal.extension import LongitudinalContext as _LCtx
+  sg_compat = _sgc
+  LongitudinalPlanner, LongControl, LongCtrlState = _lp.LongitudinalPlanner, _LC, _LCS
+  CarInterface, CAR, lp_mod, lm_mod, ACCEL_MIN, ACCEL_MAX, STOP_DISTANCE = _CI, _CAR, _lp, _lm, _AMIN, _AMAX, _lm.STOP_DISTANCE
+  _LEAD_ACCEL_TAU, log, messaging, ModelConstants, LongitudinalContext = _TAU, _log, _messaging, _MC, _LCtx
+  # old-layout only: the SG tree has no stock Plant-with-StarPilot hooks, lead tracking rules, tunes or Ioniq 6 car-side state
+  Plant = should_track_lead = should_hold_tracked_vision_lead = THRESHOLD = tunes = ccm = None
+
+
 def _import_stack():
   """Import the StarPilot modules (needs the built x86 tree on sys.path, done above)."""
+  if toolchain.SG:
+    return _import_stack_sg()
   global Plant, LongitudinalPlanner, LongControl, LongCtrlState, CarInterface, CAR, lp_mod, ACCEL_MIN, ACCEL_MAX
   global should_track_lead, should_hold_tracked_vision_lead, THRESHOLD, STOP_DISTANCE, _LEAD_ACCEL_TAU
   global log, messaging, ModelConstants, tunes, ccm
@@ -152,7 +181,8 @@ def stinger_cp(delay):
   CP.openpilotLongitudinalControl = True
   CP.radarUnavailable = False
   CP.pcmCruise = False
-  CP.enableBsm = True
+  if not toolchain.SG:    # the field is gone in the SG schema
+    CP.enableBsm = True
   return CP
 
 
@@ -243,9 +273,236 @@ def stinger_crawl_cap(CP, lead, v_ego, accel_min):
   return max(float(accel_min), -float(np.clip(required * CRAWL_CAP_GAIN, CRAWL_CAP_MIN_DECEL, CRAWL_CAP_MAX_DECEL)))
 
 
+SG_UNAVAILABLE = (
+  # (attribute on the parsed args or plant kwarg, flag text, why it is unavailable under sg)
+  ("testing_ground", "--testing-ground", None),
+  ("tune_param", "--tune-param", None),
+  ("exp_no_close_cap", "--exp-no-close-cap", None),
+  ("exp_crv_cap", "--exp-crv-cap", None),
+)
+
+
+def check_sg_opts(a):
+  """Fail fast (before any import / run) on options that need old-layout-only code; under old this is a no-op."""
+  if not toolchain.SG:
+    return
+  if getattr(a, "testing_ground", None):
+    toolchain.require_old("--testing-ground (Testing Grounds)")
+  if getattr(a, "stopped_lead_tune", "A") not in ("A", None) and "B" in str(a.stopped_lead_tune):
+    toolchain.require_old("--stopped-lead-tune B (Testing Ground slot 10 / the Stinger stopped-lead tune)")
+  if getattr(a, "tune_param", None):
+    toolchain.require_old("--tune-param (KIA_STINGER_2022_STOPPED_LEAD_* in longitudinal_vehicle_tunes)")
+  if getattr(a, "exp_no_close_cap", False) or getattr(a, "exp_crv_cap", False):
+    toolchain.require_old("--exp-no-close-cap / --exp-crv-cap (planner.get_close_lead_brake_cap, get_honda_crv_5g_low_speed_stopped_lead_cap)")
+  if any(t in str(getattr(a, "car_tune", "A")).split(",") for t in ("B", "C")):
+    toolchain.require_old("--car-tune B/C (longitudinal_vehicle_tunes.shape_hyundai_canfd_scc_accel / the Ioniq 6 tuning state)")
+  if getattr(a, "lead_filter", "primed") == "fast":
+    toolchain.require_old("--lead-filter fast (the MPC lead_v/lead_a filters)")
+  for flag, attr in (("--t-follow", "t_follow"), ("--jerks", "jerks"), ("--min-accel", "min_accel")):
+    if getattr(a, attr, None) is not None:
+      toolchain.require_sg_port(flag, "these are starpilotPlan values; the SG planner takes them as ProfileTuning / follow_seconds keyword arguments "
+                                "of update(), which the sim does not build")
+  if getattr(a, "cmd", "") in ("validate", "openloop"):
+    toolchain.require_sg_port(f"sim_stopped_lead.py {a.cmd}", "it replays logged starpilotPlan values (tFollow, minAcceleration, tune per route) "
+                              "that the SG planner takes differently; use `run` / `scenarios`")
+
+
+def make_plant_class_sg():
+  """The SG counterpart of make_plant_class: the real SG LongitudinalPlanner (+ MPC) and LongControl in the same closed loop with the
+  measured car response. Differences from the old sim, all because the new layout moved or removed them:
+  * no starpilotPlan: the planner takes personality-based follow time / jerks / limits (profile_tuning=None), like SG's own
+    longitudinal maneuver Plant (selfdriveState.enabled / carControl.longActive stay at their defaults, as there);
+  * car side is tune A only (accel straight through delay + lag), `tracking` in the output means "lead visible";
+  * the vision-lead path of the MPC is fed through sg_compat.ModelLeadFeed (the real qualified_model_leads is gated on the real clock)."""
+  class _SgPlant:
+    def __init__(self, *, v0, gap0, set_speed, personality="standard", delay=0.5, car_tune="A", radar=True, detect_dist=None,
+                 t_follow=None, jerks=None, min_accel=None, a0=0.0, model="plain", model_gap=None, two_leads=False, exp_mode=False,
+                 trace=False, model_lead="const", model_lead_range=80.0, stopped_lead_tune="A", lead_filter="primed", tune_params=None,
+                 exp_no_close_cap=False, exp_crv_cap=False, testing_ground=None, radard_lead=False, **_):
+      if car_tune != "A":
+        toolchain.require_old(f"car tune {car_tune} (longitudinal_vehicle_tunes / Ioniq 6 tuning state)")
+      for what, bad in (("stopped-lead tune B", stopped_lead_tune == "B"), ("tune params", bool(tune_params)), ("testing grounds", bool(testing_ground)),
+                        ("--exp-* experiments", exp_no_close_cap or exp_crv_cap), ("lead_filter fast", lead_filter == "fast")):
+        if bad:
+          toolchain.require_old(what)
+      pid, _tf, _jk, _mn = PERSONALITIES[personality]
+      self.personality = pid
+      self.frame = 0
+      self.v_lead_prev = 0.0
+      self.distance, self.distance_lead, self.speed = 0.0, float(gap0), float(v0)
+      self.clock = SimClock()
+      self.feed = sg_compat.ModelLeadFeed()
+      clock_ns = sg_compat.patch_planner_clock(lp_mod, lm_mod, self.clock.monotonic)
+      lp_mod.qualified_model_leads = self.feed
+      self.CP = stinger_cp(delay)
+      self.planner = LongitudinalPlanner(self.CP, init_v=v0, init_a=a0, clock_ns=clock_ns)
+      self.far_follow_slew = (float("nan"), float("nan"))
+      self.LoC = LongControl(self.CP)
+      self.LoC.last_output_accel = a0
+      self.car = CarSide(self.CP, car_tune, a0)
+      self.radar, self.detect_dist, self.set_speed, self.e2e = radar, detect_dist, set_speed, exp_mode
+      self.acceleration = a0
+      self.a_ego = a0
+      self.model, self.model_gap, self.two_leads, self.trace = model, model_gap, two_leads, trace
+      self.model_lead, self.model_lead_range, self.lead_track = model_lead, model_lead_range, None
+      self.src_names = {int(v): k for k, v in lm_mod.LongitudinalPlanSource.schema.enumerants.items()}
+      self.state_names = {int(v): k for k, v in LongCtrlState.schema.enumerants.items()}
+
+    @property
+    def current_time(self):
+      return float(self.frame) / 20.0
+
+    def update_planner(self, sm, now_ns):
+      if not self.trace:
+        self.planner.update(sm, now_ns=now_ns)
+        return ""
+      code = LongitudinalPlanner.update.__code__
+      state, changes = {}, []
+
+      def local_trace(frame, event, arg):
+        v = frame.f_locals.get("output_a_target")
+        if event == "line":
+          if state.get("prev") is not None and v is not None and v != state.get("last"):
+            changes.append((state["prev"], float(v)))
+            state["last"] = v
+          state["prev"] = frame.f_lineno
+        elif event == "return" and v is not None and v != state.get("last"):
+          changes.append((state["prev"], float(v)))
+        return local_trace
+
+      sys.settrace(lambda frame, event, arg: local_trace if frame.f_code is code else None)
+      try:
+        self.planner.update(sm, now_ns=now_ns)
+      finally:
+        sys.settrace(None)
+      if not hasattr(self, "_src"):
+        self._src = open(lp_mod.__file__).read().splitlines()
+      txt = lambda ln: self._src[ln - 1].strip()[:60] if ln else "-"
+      drops = [(changes[k][1] - (changes[k - 1][1] if k else changes[k][1]), changes[k][0]) for k in range(len(changes))]
+      big = min(drops)[1] if drops and min(drops)[0] < -1e-3 else 0
+      return f"final L{changes[-1][0]}: {txt(changes[-1][0])} | drop L{big}: {txt(big)}" if changes else ""
+
+    def step(self, v_lead=0.0, prob_lead=1.0, v_cruise=None, pitch=0.0, prob_throttle=1.0, lead_obs=None):
+      v_cruise = self.set_speed if v_cruise is None else v_cruise
+      d_rel = max(0.0, self.distance_lead - self.distance)
+      visible = self.detect_dist is None or d_rel < self.detect_dist
+      a_lead = (v_lead - self.v_lead_prev) / DT_PLAN
+      self.v_lead_prev = v_lead
+      v_obs, a_obs = (v_lead, a_lead) if lead_obs is None else lead_obs
+      now_ns = int(self.clock.t * 1e9)
+
+      radar = messaging.new_message("radarState")
+      car_state = messaging.new_message("carState")
+      vp = messaging.new_message("vehicleParameters")
+      car_control = messaging.new_message("carControl")
+      model = messaging.new_message("modelV2")
+      control = messaging.new_message("controlsState")
+      ss = messaging.new_message("selfdriveState")
+
+      lead = log.RadarState.LeadData.new_message()
+      if visible:
+        lead.dRel = float(d_rel)
+        lead.yRel = 0.0
+        lead.vRel = float(v_obs - self.speed)
+        lead.vLead = float(v_obs)
+        lead.vLeadK = float(v_obs)
+        lead.aLeadK = float(a_obs)
+        lead.aLeadTau = float(_LEAD_ACCEL_TAU)
+        lead.present = True
+        lead.radar = bool(self.radar)
+        lead.radarTrackId = 1 if self.radar else -1
+        lead.modelProb = 1.0 if self.radar else 0.9
+      else:
+        lead.dRel = 200.0
+      radar.radarState.leadOne = lead
+      if self.two_leads and visible:
+        radar.radarState.leadTwo = lead
+      radar.radarState.mdMonoTime = now_ns
+
+      t_idx = np.array(ModelConstants.T_IDXS)
+      xs = (self.speed + 0.5) * t_idx
+      if self.model == "stop" and visible and self.model_gap is not None and v_obs < self.speed:
+        xs = np.minimum(xs, max(0.0, d_rel - self.model_gap))
+      position = log.XYZTData.new_message()
+      position.x = [float(x) for x in xs]
+      model.modelV2.position = position
+      model.modelV2.action.desiredAcceleration = float(self.a_ego + 0.1)
+      velocity = log.XYZTData.new_message()
+      velocity.x = [float(x) for x in (self.speed + 0.5) * np.ones_like(t_idx)]
+      velocity.x[0] = float(self.speed)
+      model.modelV2.velocity = velocity
+      acceleration = log.XYZTData.new_message()
+      acceleration.x = [float(x) for x in np.zeros_like(t_idx)]
+      model.modelV2.acceleration = acceleration
+      model.modelV2.meta.disengagePredictions.gasPressProbs = [float(prob_throttle) for _ in range(6)]
+      if self.model_lead != "off" and visible and d_rel <= self.model_lead_range:
+        lt = np.array(ModelConstants.LEAD_T_IDXS)
+        if self.model_lead == "oracle" and self.lead_track is not None:
+          tt = self.current_time + lt
+          lx = np.interp(tt, self.lead_track[0], self.lead_track[1]) - self.distance
+          lv = np.gradient(np.interp(tt, self.lead_track[0], self.lead_track[1]), tt)
+          lv[0] = v_obs
+        else:      # constant lead speed
+          lx = d_rel + v_obs * lt
+          lv = np.full(len(lt), max(v_obs, 0.0))
+        ml = model.modelV2.init("leadsV3", 3)[0]
+        ml.prob = 1.0
+        ml.probTime = 0.0
+        ml.t = [float(x) for x in lt]
+        ml.x = [float(x) for x in lx]
+        ml.v = [float(max(x, 0.0)) for x in lv]
+        ml.a = [0.0 for _ in lt]
+        ml.y = [0.0 for _ in lt]
+      self.feed.observe(now_ns, model.modelV2)
+
+      control.controlsState.longControlState = LongCtrlState.pid
+      ss.selfdriveState.experimentalMode = self.e2e
+      ss.selfdriveState.personality = self.personality
+      car_state.carState.vEgo = float(self.speed)
+      car_state.carState.aEgo = float(self.a_ego)
+      car_state.carState.standstill = bool(self.speed < 0.01)
+      car_state.carState.vCruise = float(v_cruise * 3.6)
+      car_control.carControl.orientationNED = [0.0, float(pitch), 0.0]
+      sm = sg_compat.SgSM({"radarState": radar.radarState, "carState": car_state.carState, "carControl": car_control.carControl,
+                           "controlsState": control.controlsState, "selfdriveState": ss.selfdriveState,
+                           "vehicleParameters": vp.vehicleParameters, "modelV2": model.modelV2},
+                          now_ns, self.frame, recv=now_ns / 1e9)
+      bind = self.update_planner(sm, now_ns)
+      a_target = float(self.planner.output_a_target)
+      should_stop = bool(self.planner.output_should_stop)
+
+      cs = SimpleNamespace(vEgo=0.0, aEgo=0.0, brakePressed=False, cruiseState=SimpleNamespace(standstill=False))
+      leads = (radar.radarState.leadOne, radar.radarState.leadTwo)
+      ctx = LongitudinalContext(leads=leads, has_lead=bool(visible), experimental_mode=bool(self.e2e))
+      for _ in range(SUBSTEPS):
+        cs.vEgo, cs.aEgo = float(self.speed), float(self.a_ego)
+        cmd = float(min(self.LoC.update(True, cs, a_target, should_stop, (ACCEL_MIN, ACCEL_MAX), context=ctx), 4.0))
+        sent = self.car.shape(cmd, self.speed, self.a_ego, self.LoC.long_control_state, bool(visible), float(d_rel))
+        a = self.car.tick(sent)
+        v_new = self.speed + a * DT_CTRL
+        if v_new <= 0.0:
+          v_new, a = 0.0, 0.0
+          self.car.a_act = 0.0
+        self.speed = v_new
+        self.a_ego = a
+        self.distance += self.speed * DT_CTRL
+        self.distance_lead += v_lead * DT_CTRL
+        self.clock.t += DT_CTRL
+      self.frame += 1
+      return {"t": self.current_time, "gap": max(0.0, self.distance_lead - self.distance), "v": self.speed, "a_target": a_target,
+              "cmd": cmd, "sent": sent, "a": self.a_ego, "should_stop": should_stop, "visible": visible,
+              "tracking": bool(visible), "src": self.src_names.get(int(self.planner.mpc.source), str(self.planner.mpc.source)),
+              "state": self.state_names.get(int(self.LoC.long_control_state), str(self.LoC.long_control_state)), "bind": bind}
+
+  return _SgPlant
+
+
 def make_plant_class():
   """Plant subclass with the Stinger CP, StarPilot-like starpilotPlan, real LongControl and the measured car response (built after the
   openpilot imports, which need the x86 tree)."""
+  if toolchain.SG:
+    return make_plant_class_sg()
+
   class _StingerPlant(Plant):
     def __init__(self, *, v0, gap0, set_speed, personality="standard", delay=0.5, car_tune="A", radar=True, detect_dist=None,
                  t_follow=None, jerks=None, min_accel=None, a0=0.0, model="plain", model_gap=None, two_leads=False, exp_mode=False,
@@ -1079,6 +1336,7 @@ def main():
   o.set_defaults(fn=cmd_openloop)
 
   a = ap.parse_args()
+  check_sg_opts(a)
   a.fn(a)
 
 

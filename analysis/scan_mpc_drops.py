@@ -3,10 +3,10 @@
 barely change (<1 m, <0.3 m/s, <0.3 m/s^2). Uses only logs (no replay): longitudinalPlan.aTarget and accels[0].
 Usage: scan_mpc_drops.py ROUTE SEG [SEG ...]"""
 import os, sys
-DEV = os.environ.get("STINGER_DEV_HOME", os.path.expanduser("~/stinger/starpilot-dev"))
-BUILD = os.environ.get("STARPILOT_BUILD", os.path.join(DEV, "x86"))
-for p in (BUILD, os.path.join(BUILD, "opendbc_repo"), os.path.dirname(os.path.abspath(__file__))):
-  sys.path.insert(0, p)
+HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
+import toolchain  # noqa  (STINGER_TOOLCHAIN=old|sg)
+toolchain.setup_paths(extra=(HERE,))
 import planner_delay_replay as R  # noqa
 
 route, segs = sys.argv[1], [int(x) for x in sys.argv[2:]]
