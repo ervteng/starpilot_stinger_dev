@@ -10,17 +10,20 @@ from concurrent.futures import ProcessPoolExecutor
 import capnp
 import zstandard
 
-# Workspace base folder (see docs/LOCAL_SETUP.md): parent of $STARPILOT_DIR, else ~/stinger
-BASE = os.path.dirname(os.path.abspath(os.environ["STARPILOT_DIR"])) if os.environ.get("STARPILOT_DIR") \
-  else os.path.expanduser("~/stinger")
-DEV = os.environ.get("STINGER_DEV_HOME", os.path.join(BASE, "starpilot-dev"))
-# Checkout with slot 9 tunes B/C (branch stinger-stock-tune), used as the --starpilot default by the replay scripts
-TUNE_DIR = os.environ.get("STINGER_TUNE_DIR", os.path.join(BASE, "wt", "stock-tune"))
+import toolchain
+from toolchain import BASE, DEV  # workspace base folder and $STINGER_DEV_HOME (see docs/LOCAL_SETUP.md); toolchain.py resolves them
+# Checkout with slot 9 tunes B/C (branch stinger-stock-tune), used as the --starpilot default by the replay scripts.
+# STINGER_TOOLCHAIN=sg has no such checkout (no Testing Grounds): the default is then the sg build tree.
+TUNE_DIR = os.environ.get("STINGER_TUNE_DIR", toolchain.BUILD if toolchain.SG else os.path.join(BASE, "wt", "stock-tune"))
 LOG_DIR = os.path.join(DEV, "logs")
 DONGLE = os.environ.get("STINGER_DONGLE", "59fa1d41318b87d3")
 
 
 def _starpilot_dir() -> str:
+  if toolchain.SG:   # the sg build tree, whatever $STARPILOT_DIR (the clone, usually in the old layout) says
+    if toolchain.have_cereal(toolchain.BUILD):
+      return toolchain.BUILD
+    raise RuntimeError(f"SecretGoodStarPilot tree not found at {toolchain.BUILD}; run STINGER_TOOLCHAIN=sg setup_x86.sh")
   for d in (os.environ.get("STARPILOT_DIR"), os.path.join(BASE, "starpilot"),
             os.path.join(DEV, "x86"), os.path.join(DEV, "StarPilot")):
     if d and os.path.exists(os.path.join(d, "cereal", "log.capnp")):
@@ -33,6 +36,11 @@ _log = None
 
 def schema():
   global _log
+  if _log is None and toolchain.SG:
+    # sg: the logs come from the old build, whose schema is not wire-compatible with sg's, and cannot be loaded as-is next to
+    # openpilot.cereal (Duplicate ID abort): use an ID-remapped copy of the old one (see toolchain.remapped_log_schema_dir)
+    cereal = toolchain.remapped_log_schema_dir()
+    _log = capnp.load(os.path.join(cereal, "log.capnp"), imports=[cereal, os.path.join(cereal, "include"), os.path.dirname(capnp.__file__)])
   if _log is None and "cereal" in sys.modules:
     # opendbc from a StarPilot checkout already loaded the schema; loading it twice is a capnp duplicate-ID error
     from cereal import log
@@ -108,6 +116,13 @@ def add_starpilot_path(starpilot_dir: str | None = None) -> str:
   The parser and the Stinger radar decoder are pure Python, so any checkout works, built or not.
   """
   d = starpilot_dir or _starpilot_dir()
+  if toolchain.SG:
+    # --starpilot / hard-coded old-layout checkouts (wt/stock-tune, wt/stinger-combined) mean "the tunes / decoder checkout": under sg
+    # that is the sg build tree, unless the caller passes a tree that already is an sg layout
+    if toolchain.detect_layout(d) != "sg":
+      d = _starpilot_dir()
+    toolchain.setup_paths(d)
+    return d
   for p in (d, os.path.join(d, "opendbc_repo")):
     if p not in sys.path:
       sys.path.insert(0, p)
