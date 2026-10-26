@@ -50,6 +50,7 @@ Every drive from the Stinger (dongle `59fa1d41318b87d3`) from 2026-09-17 on, gen
 | `0000000c--8c7821740b` | 2026-10-20 17:05 | 5 | stinger-combined `93871099` | openpilot-long (0%) | - | First stinger-combined drive (9387109), not engaged. Dashboard speed limit check. |
 | `0000000d--5e0d1d244b` | 2026-10-20 17:16 | 19 | stinger-combined `93871099` | openpilot-long (88%) | 10-18 | stinger-combined 9387109: Auto Stop fix validated in rlog segs 15-18, dashboard speed limit 99%, highway braking (cut-in seg ~4). |
 | `0000000e--5ebf4636a1` | 2026-10-20 17:38 | 35 | stinger-combined `93871099` | openpilot-long (92%) | 3-28 | stinger-combined 9387109: highway traffic jam hard brake ~712 s (seg 11), Auto Stop seg 3, radar vs vision offsets, out-of-sample speed-bias check. |
+| `00000015--2b757ccb00` | after Oct 20 (not in the generated catalog) | 51 | stinger-combined / stinger-stock-tune | openpilot-long | 0-50 | **Tune B drive** (slot 9 B: SCC14 JerkLowerLimit 2.5/0.5, delay 0.5). Lead-filter phantom brake at 1836 s; highway slowdowns at 451/714/836/1951/2155 s. Used for the radar SG-port equivalence and the Tune B SG eval. |
 
 ## All routes
 

@@ -1,5 +1,7 @@
 # Plan: Kia Stinger 2022 stopped-lead tune (StarPilot)
 
+> **Historical.** This plan targeted the old StarPilot base (`823a5d5`) and a cloud session with `/home/user/...` paths. For the current state, see `docs/history.md` and the workstation `HANDOVER.md`.
+
 ## Goal (agreed with the user)
 Approaching a stopped (or nearly stopped) lead from city speeds:
 - start braking ~5 s before reaching the stopped car (driver data: TTC at brake onset 4.7 s at 8-15 mph, 5.9 s at 15-25 mph),

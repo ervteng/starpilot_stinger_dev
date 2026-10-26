@@ -1,5 +1,7 @@
 # Plan v3: Kia Stinger 2022 stock-like tunes from existing StarPilot code (Testing Ground slot 9: A/B/C)
 
+> **Historical.** This plan targeted the old StarPilot base (`823a5d5`) and a cloud session with `/home/user/...` paths. For the current state, see `docs/history.md` and the workstation `HANDOVER.md`.
+
 Goal: two Stinger-only longitudinal tunes that make openpilot's SCC12/SCC14 output look like the factory SCC,
 each built by REUSING an existing StarPilot tune, with full-strength urgent braking kept.
 - A = installed tune (no change, byte-identical to today)

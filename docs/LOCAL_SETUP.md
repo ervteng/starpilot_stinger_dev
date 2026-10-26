@@ -4,19 +4,13 @@ You are setting up, on the user's own computer, the workspace that was previousl
 user's Kia Stinger 2022 StarPilot fork. Everything that matters is in two GitHub repos; logs and build outputs are
 re-created. Follow the steps in order, report what you did, and stop and ask before anything not listed here.
 
-## 0. Ground rules (carry these over)
-- Owner: GitHub user `ervteng`. Commits are authored as the user and committed as Claude:
-  `GIT_AUTHOR_NAME=ervteng GIT_AUTHOR_EMAIL=5085265+ervteng@users.noreply.github.com git commit ...`
-  Every commit message ends with a `Co-Authored-By:` trailer for the model you are, plus any session link your
-  environment asks for. Don't copy the previous session's link.
-- Push with `git push -u origin <branch>`. No force-push except on the dev repo when the user asks. No PRs unless asked:
-  PRs to FireStar (firestar5683/StarPilot) are on hold until FireStar releases SecretGoodStarPilot.
-- Never use bare `git stash` (worktrees share the stash). Use temporary WIP commits.
-- `stinger-combined` is the user's daily build. Nothing goes into it without the user's explicit OK.
-- The comma connect token is the env var `COMMA_JWT` (value starts with `JWT `, from https://jwt.comma.ai). Never ask
-  the user to paste it into chat, never print it; scripts read it from the environment.
-- The user prefers: plan first, then delegate implementation to Sonnet subagents; every tuning number must be based on
-  measured data (no guesses); reuse existing StarPilot code over new code.
+## 0. Ground rules
+The rules for every agent (commit identity, no force-push, no bare stash, the daily build needing the user's OK, token handling, how to work) are in [AGENTS.md](AGENTS.md).
+After cloning (section 2), copy that file to the base folder and add a `CLAUDE.md` that imports it. Claude Code and Gemini/Antigravity sessions started there then load the rules automatically:
+```bash
+cp $BASE/starpilot_stinger_dev/docs/AGENTS.md $BASE/AGENTS.md && echo '@AGENTS.md' > $BASE/CLAUDE.md
+```
+Then fix the paths inside it if `BASE` isn't `/home/openpilotstuff`.
 
 ## 1. Repositories
 | Repo | Purpose |
@@ -27,14 +21,13 @@ re-created. Follow the steps in order, report what you did, and stop and ask bef
 StarPilot branches (all on `origin`):
 | Branch | What it is |
 |---|---|
-| `stinger-combined` | **daily build**: radar/LFA + dashboard speed limit + Auto Stop (ISG) fix + radar speed-bias fix + Testing Ground slot 9 (long tune A/B/C) + slot 10 (stopped-lead tune) + FLM overrides fix |
-| `stinger-radar-lfa-clean` | PR candidate: radar decoder, LFA button, stop undershoot fix, test move, speed-bias fix |
-| `stinger-radar-lfa` | older working branch (G90 stop tune) |
-| `hkg-can-dashboard-speed-limit`, `hkg-isg-steer-fault` | standalone PR candidates |
-| `stinger-stock-tune` | slot 9 tunes B (GV70-style) and C (Ioniq 6 as-is), based on StarPilot 823a5d5 |
-| `stinger-stopped-lead` | slot 10 stopped-lead obstacle bias, based on StarPilot 823a5d5 |
-| `flm-overrides-json-fix` | one-fix branch for FireStar: FLMActiveOverrides was json.loads'ed twice so FLM profiles never applied |
-| `stinger-long-tuning` | superseded sunnypilot-port experiment (reference only) |
+| `stinger-combined` | **daily build** on the old StarPilot base: radar/LFA, dashboard speed limit, ISG fix, FLM fix, lead-filter sync, Testing Ground slot 9 (long tunes) and slot 10 (stopped lead) |
+| `sg-stinger-combined` | next daily build: SecretGoodStarPilot plus `--no-ff` merges of the `sg-*` branches below |
+| `sg-hyundai-isg-steer-fault`, `sg-kia-stinger-2022-radar`, `sg-hkg-can-dashboard-speed-limit` | one-feature branches on SecretGoodStarPilot, upstream PR candidates |
+| `stinger-stock-tune`, `stinger-stopped-lead` | old-base slot 9 (Tune B) / slot 10 reference, not ported to SG yet |
+| `StarPilot` | mirror of FireStar's StarPilot |
+
+Retired branches are kept as `archive/<name>` tags.
 
 Optional reference clones (read-only, for comparisons): sunnypilot `https://github.com/sunnypilot/sunnypilot.git`
 (branches `master`, `dev`), CarrotPilot `https://github.com/ajouatom/openpilot.git` (branch `carrot-wip`).
@@ -110,18 +103,9 @@ Routes used most (full names; the counter resets, so short names repeat):
 Regenerate the catalog for newer routes with the same approach as `routes/` (ask the user first).
 
 ## 7. Context: where the project stands
-Read `README.md` (script index) and `docs/plans/*.md`. Summary:
-- **Slot 9 "Stinger Long Tune"** (Testing Grounds, Galaxy): A = installed, B = GV70-style (braking shaped to stock SCC,
-  acceleration as today, urgent braking <= -1.0 not smoothed), C = Ioniq 6 tune as-is. Delay 0.5 s for B/C.
-- **Slot 10 "Stinger Stopped Lead"**: B = stopped-lead obstacle bias (stop ~3.4-4.4 m behind instead of 4.3-6.3 m).
-  Its early/crawl shape is limited by StarPilot's generic `get_close_lead_brake_cap`; a narrow Stinger-only skip of that
-  cap is **paused by the user**; a low-speed crawl fix (CR-V-style cap) was proposed, not started.
-- **Lateral**: settings SteerLatAccel 2.75, SteerFriction 0.12, auto steer delay. Analysis (`analysis/lateral_tracking.py`)
-  suggests SteerFriction ~0.10 and, via FLM, higher low-speed friction thresholds (~0.40-0.50 at 0/5 m/s). The FLM
-  overrides bug is fixed on `stinger-combined`; the user's `cleanup_pass:assertive` profile will now apply.
-- Simulator: `analysis/sim_stopped_lead.py` (real planner + MPC on the x86 build; see its docstring and
-  `analysis/stopped_lead_results.md`). Replays: `planner_delay_replay.py`, `tune_safety_replay.py`, `stock_mimic_check.py`.
-- Open questions the user has not decided: closer stop target, squashing the `-clean` commits, when to PR upstream.
+- **Current state and open work:** the workstation's `HANDOVER.md`. It isn't in git; ask the user for it, or start from [history.md](history.md).
+- **Full past record:** [history.md](history.md) (tunes, reverted designs, the SG port plan and its results).
+- **Script index and toolchains:** `README.md`. Old plans are in `docs/plans/`; they are historical.
 
 ## 8. Done when
 - Both repos cloned, `stinger-combined` worktree present, env vars set (token by the user).

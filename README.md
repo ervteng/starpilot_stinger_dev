@@ -1,11 +1,11 @@
 # starpilot_stinger_dev
 
 Dev tools for the Kia Stinger 2022 work in [ervteng/StarPilot](https://github.com/ervteng/StarPilot)
-(`stinger-radar-lfa`): run StarPilot's Python tests on an x86 machine, download drive logs from comma connect,
+(`stinger-combined`, `sg-stinger-combined`): run StarPilot's Python tests on an x86 machine, download drive logs from comma connect,
 and analyze stops and the Stinger radar.
 
 Setting this up on a new machine: see [docs/LOCAL_SETUP.md](docs/LOCAL_SETUP.md) (written for an agent). Design plans for
-the Stinger tunes are in [docs/plans](docs/plans).
+the Stinger tunes are in [docs/plans](docs/plans) (historical). Agent rules: [docs/AGENTS.md](docs/AGENTS.md); project history: [docs/history.md](docs/history.md).
 
 Everything heavy (venv, x86 builds, logs) lives outside this repo in `$STINGER_DEV_HOME`
 (default `/home/user/starpilot-dev`) and is recreated on demand.
