@@ -10,7 +10,7 @@ Current state and open work: `/home/openpilotstuff/HANDOVER.md`. Read it before 
   `GIT_AUTHOR_NAME=ervteng GIT_AUTHOR_EMAIL=5085265+ervteng@users.noreply.github.com GIT_COMMITTER_NAME=<you> GIT_COMMITTER_EMAIL=<you> git commit ...`
   End each message with a `Co-Authored-By:` trailer for your model.
 - **Push** with `git push -u origin <branch>`. `gh` is logged in as ervteng.
-- **Never force-push.** Never rewrite pushed history; use revert commits instead.
+- **Never force-push, with one exception.** Never rewrite pushed history; use revert commits instead. The exception is SG base updates: when the user asks to move to a newer SG tip, rebase the `sg-*` feature branches onto it and rebuild `sg-stinger-combined` (fresh `--no-ff` merges on the new tip). Then push those branches with `--force-with-lease`. Check with `git range-diff` that every commit is unchanged or that conflict fixes are reported. The user does this often.
 - **Never use bare `git stash`.** Worktrees share the stash. Use WIP commits.
 - **No PRs to FireStar** (`firestar5683/StarPilot`) unless the user asks.
 - **Never delete remote branches or tags without the user's OK.** To retire a branch, tag it `archive/<name>` first.
