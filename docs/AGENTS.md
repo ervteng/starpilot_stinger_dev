@@ -37,6 +37,7 @@ Current state and open work: `/home/openpilotstuff/HANDOVER.md`. Read it before 
 - **Env vars:** pass `STINGER_DEV_HOME=/home/openpilotstuff/starpilot-dev STARPILOT_DIR=/home/openpilotstuff/starpilot` explicitly. Agent shells may not source `~/.bashrc`, and the scripts would then fall back to `~/stinger`.
 - **Toolchain:** `STINGER_TOOLCHAIN=old|sg`. Run Python tools with `./run_py.sh analysis/x.py`, and tests with `./run_tests.sh <ref> <paths>`. SG tests need `-n 0` (serial). See the dev repo README, "Toolchains".
 - **Downloads:** `comma_dl.py ROUTE SEGS --type rlog|qlog|qcamera|fcamera`. Dongle `59fa1d41318b87d3`. Catalog: `starpilot_stinger_dev/routes/ROUTES.md`.
+- **New worktree:** after `git worktree add`, link the rules into its root so Antigravity finds them: `ln -s ../../AGENTS.md wt/<name>/AGENTS.md`. Git already ignores it through `.git/info/exclude`.
 - **glibc gotcha:** a rebuilt `x86*/third_party/acados/x86_64/lib/libblasfeo.so` needs `patchelf --clear-execstack`.
 
 ## Keep docs current

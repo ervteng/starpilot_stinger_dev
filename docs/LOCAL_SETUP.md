@@ -11,6 +11,11 @@ After cloning (section 2), copy that file to the base folder and add a `CLAUDE.m
 cp $BASE/starpilot_stinger_dev/docs/AGENTS.md $BASE/AGENTS.md && echo '@AGENTS.md' > $BASE/CLAUDE.md
 ```
 Then fix the paths inside it if `BASE` isn't `/home/openpilotstuff`.
+For Antigravity, which stops at each repo root, also link it into every repo and worktree root and exclude it from git:
+```bash
+for d in $BASE/starpilot $BASE/starpilot_stinger_dev; do ln -s ../AGENTS.md $d/AGENTS.md; echo /AGENTS.md >> $d/.git/info/exclude; done
+# each worktree: ln -s ../../AGENTS.md $BASE/wt/<name>/AGENTS.md
+```
 
 ## 1. Repositories
 | Repo | Purpose |
