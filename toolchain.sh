@@ -55,3 +55,19 @@ else
 fi
 TC_MPC_SO=$_tc_mpc/acados_ocp_solver_pyx.so
 TC_BLASFEO=$_tc_blasfeo
+
+# SG tracks aarch64 copies of the acados runtime libs next to the MPC solver. A checkout of a ref that changes them
+# puts the aarch64 files back (skip-worktree doesn't stop that) while SCons still considers its x86 copies current,
+# so the solver can't load libacados.so. Re-copy the x86 libs from the acados wheel, as the SConscript's Copy step does.
+tc_restore_acados_libs() {
+  [ "$TC" = sg ] || return 0
+  local lib dir=${TC_MPC_SO%/*} src
+  src=$("$PY" -c 'import acados; print(acados.LIB_DIR)' 2>/dev/null) || return 0
+  for lib in libacados.so libblasfeo.so libhpipm.so libqpOASES_e.so.3.1; do
+    if [ -f "$src/$lib" ] && [ -f "$dir/$lib" ] && ! file "$dir/$lib" | grep -q x86-64; then
+      echo "[toolchain:sg] restoring x86 $lib" >&2
+      cp "$src/$lib" "$dir/$lib"
+      git -C "$W" update-index --skip-worktree "${dir#$W/}/$lib" 2>/dev/null || true
+    fi
+  done
+}

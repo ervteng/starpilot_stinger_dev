@@ -13,6 +13,7 @@ REF=${1:-$TC_DEFAULT_REF}; shift || true
 rev=$(git -C "$W" rev-parse --verify -q "$REF^{commit}" || git -C "$W" rev-parse "origin/$REF")
 git -C "$W" checkout -q --detach "$rev"
 echo "[run_tests:$TC] $REF -> $(git -C "$W" log -1 --format='%h %s')"
+tc_restore_acados_libs
 
 cd "$W"
 export PYTHONPATH=$TC_PYTHONPATH

@@ -115,6 +115,7 @@ if [ -f "$TC_BLASFEO" ] && readelf -lW "$TC_BLASFEO" 2>/dev/null | grep GNU_STAC
   log "clearing execstack on $TC_BLASFEO"
   patchelf --clear-execstack "$TC_BLASFEO"
 fi
+tc_restore_acados_libs
 # The builds overwrite tracked aarch64 binaries; hide them from git so run_tests.sh can switch refs.
 modified=$(git -C "$W" ls-files -m)
 [ -n "$modified" ] && git -C "$W" update-index --skip-worktree $modified
