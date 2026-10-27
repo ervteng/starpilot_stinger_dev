@@ -22,7 +22,7 @@ Current state and open work: `/home/openpilotstuff/HANDOVER.md`. Read it before 
 - Gate Stinger-only behaviour to `KIA_STINGER_2022`, not to all cars.
 - Every tuning number must come from measured data (factory ACC logs, replays), with its basis in a comment. Fix acceptance criteria before running an eval, and don't move them afterwards.
 - Reuse existing StarPilot/SG per-car hooks before writing new mechanisms. One mechanism per commit.
-- **SecretGoodStarPilot (SG) base:** branch new SG work from the base `sg-stinger-combined` is built on (currently `7dc37f190f`). Don't move to a newer SG tip unless the user asks.
+- **SecretGoodStarPilot (SG) base:** branch new SG work from the base `sg-stinger-combined` is built on (currently `0422970f2d`). Don't move to a newer SG tip unless the user asks.
 - **Each SG change gets its own branch off that base,** suitable for an upstream PR. Then merge it with `--no-ff` into `sg-stinger-combined`.
 - **Size validation to the change.** For small edits, run only the affected test files. Run the full serial SG suite once per feature branch, before pushing or merging. Run replays per route in parallel.
 
