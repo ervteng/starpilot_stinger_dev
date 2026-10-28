@@ -32,24 +32,26 @@ git clone https://github.com/ervteng/starpilot_stinger_dev /home/user/starpilot_
 /home/user/starpilot_stinger_dev/setup_x86.sh
 ```
 
-## Toolchains (old / SecretGood)
+## Toolchains (SecretGood/Dom / old)
 
-Two independent builds can sit side by side; `STINGER_TOOLCHAIN=old|sg` (default `old`) picks one for every script.
-Logs in `$STINGER_DEV_HOME/logs` are shared. Switch at any time, nothing is rebuilt or re-checked-out by switching.
+`STINGER_TOOLCHAIN=sg|old` (default `sg`) picks the build every script uses. The `old` toolchain (pre-SG StarPilot) was
+retired on 2026-10-28 and its build tree deleted; `STINGER_TOOLCHAIN=old ./setup_x86.sh` can rebuild it from
+`archive/stinger-combined-final` if an old-layout replay is ever needed.
+Logs in `$STINGER_DEV_HOME/logs` are shared. `run_tests.sh` rebuilds the x86 natives itself when the ref it checks out
+changes a tracked prebuilt `.so`/`.a` (the repo ships aarch64 copies).
 
-| | `old` (default) | `sg` (SecretGoodStarPilot) |
+| | `old` (retired) | `sg` (SecretGoodStarPilot / Dom, default) |
 |---|---|---|
 | code layout | repo root (`selfdrive/`, `cereal/`, ...) | under `openpilot/` (`openpilot/selfdrive/`, ...), opendbc / msgq at the root |
-| build tree | `$STINGER_DEV_HOME/x86` (worktree, default ref `stinger-radar-lfa`) | `$STINGER_DEV_HOME/x86-sg` (worktree, default ref `upstream/SecretGoodStarPilot`) |
+| build tree | `$STINGER_DEV_HOME/x86` (worktree, default ref `archive/stinger-combined-final`) | `$STINGER_DEV_HOME/x86-sg` (worktree, default ref `sg-stinger-combined`) |
 | venv | `$STINGER_DEV_HOME/venv`, pinned from `requirements.txt` | `$STINGER_DEV_HOME/venv-sg`, from SG's own `uv.lock` (`uv sync --extra dev`) plus the `requirements.txt` extras it lacks (casadi, hypothesis, ...) |
 | natives | params, transformations, msgq/visionipc, pandad, long MPC (`scons --minimal`) | `libparams_c`, msgq/visionipc, opendbc `_raw_value`, long MPC (transformations and pandad_api are pure Python there); no apt packages needed, zmq/capnp/acados come from `comma-deps-*` wheels |
 | `sys.path` | tree, `opendbc_repo` | tree, `msgq_repo`, `opendbc_repo`, `rednose_repo`, `panda` (SG's `dev-mode-dirs` + editable installs) |
 
 ```bash
-./setup_x86.sh                                    # old, as before
-STINGER_TOOLCHAIN=sg ./setup_x86.sh               # builds x86-sg + venv-sg (first time ~2 min)
-STINGER_TOOLCHAIN=sg ./run_tests.sh upstream/SecretGoodStarPilot openpilot/selfdrive/controls/tests opendbc_repo/opendbc/car/hyundai/tests
-STINGER_TOOLCHAIN=sg ./run_py.sh analysis/planner_delay_replay.py 00000015--2b757ccb00 --segments 29-30 --events 1836.5 --window 3
+./setup_x86.sh                                    # builds x86-sg + venv-sg (first time ~2 min)
+./run_tests.sh sg-stinger-combined openpilot/selfdrive/controls/tests opendbc_repo/opendbc/car/hyundai/tests -n 0
+./run_py.sh analysis/planner_delay_replay.py 00000015--2b757ccb00 --segments 29-30 --events 1836.5 --window 3
 ```
 
 `run_py.sh` runs a script with the selected toolchain's venv python; the planner tools need it under `sg` (the old venv lacks SG's

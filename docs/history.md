@@ -357,3 +357,13 @@ Create a new branch/worktree from `upstream/SecretGoodStarPilot` (`202a52c353`) 
   - Command: `/home/openpilotstuff/wt/clip/.venv/bin/python /home/openpilotstuff/starpilot_stinger_dev/clip_route.py 59fa1d41318b87d3/<route> -s S -e E -q low -f 60 -d <clipdata dir> -o out.mp4`.
   - Data dir layout: `<dongle>|<route>--<seg>/{rlog.zst,qlog.zst,qcamera.ts}` symlinks.
   - Output is the big comma 3/3X UI (the user has a comma four, which uses the mici UI).
+
+## 2026-10-27 to 2026-10-28: SG drive 1, HUD fixes, radar PR merged, old build retired
+- Three SG base moves on 2026-10-27 (`12dab8c31d` → `7dc37f190f` → `0422970f2d` → `05d14fc86e` → `efe875ffd6`), then to Dom `c55ef78274` on 2026-10-28; every `range-diff` unchanged.
+- Drive 1 on `sg-stinger-combined` ran stock ACC (alpha long unset). Fresh-install defaults to know: Alpha Longitudinal off, `LKASButtonControl` 0 (Off), `HideLeadMarker` 1.
+- Torque learner (`torqued`): needs every steer-torque bucket at its minimum (100/300/500/500/500/500/300/100) plus 4000 points before `valid`; drive 1 reached 76% with only the outer buckets short. Learned ~3.05 latAccelFactor / ~0.08 friction vs CP 2.75 / 0.120, inside the ±30%/±50% clamps. The points are cached every 60 s (`LiveTorqueParameters`) and restored when the CP torque values and version match; a calibration reset clears them.
+- Radar decoder vs factory SCC11 (routes 00000000, 28): distance within 0.1 m under 15 m, vRel within ±0.25 m/s. Beyond 30 m SCC11 reads 2–5% long against its own relative speed; the decoder's distance slope matches its vRel (0.99–1.00 at 30–60 m), so the offset is in SCC11. Script `starpilot-dev/scratch/range_scale.py`.
+- Radar PR #259 (squashed `9736d887b3`) opened as draft against Dom on 2026-10-27, merged by FireStar 2026-10-28. Review fixes before the PR: a line over the 160-column lint limit, and objects decoded in an error cycle leaking into the next good cycle.
+- HUD wheel icon: with stock ACC, the old build and SG send identical LKAS11/LFAHDA_MFC during AOL-only driving and the panda forwarding is the same; with openpilot long, SG gated the AOL icon to the Elantra 2021. Fixed for the Stinger (`sg-hyundai-classic-long-aol-dash-icon`).
+- Dash/HUD lead: SG sent real SCC11/SCC14 lead data only for the G90; widened to the Stinger (`sg-kia-stinger-2022-can-lead-display`), validated by replay against the old build's sent frames on route 0e.
+- Retired on 2026-10-28: `stinger-combined`, `stinger-stock-tune`, `stinger-stopped-lead`, `sg-kia-stinger-2022-radar`, `kia-stinger-2022-radar` (archive tags pushed, branches deleted), the old toolchain (`x86`, `venv`).

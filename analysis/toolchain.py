@@ -1,6 +1,6 @@
 """Toolchain selector (python twin of ../toolchain.sh; keep the two in sync).
 
-  STINGER_TOOLCHAIN=old|sg  (default old)
+  STINGER_TOOLCHAIN=sg|old  (default sg; old was retired 2026-10-28, its build tree deleted)
     old: the daily StarPilot layout (code at the repo root), build tree $STINGER_DEV_HOME/x86, venv $STINGER_DEV_HOME/venv
     sg : SecretGoodStarPilot (code under openpilot/),        build tree $STINGER_DEV_HOME/x86-sg, venv $STINGER_DEV_HOME/venv-sg
   STARPILOT_BUILD overrides the build tree. The layout is auto-detected from it (openpilot/cereal/log.capnp present => sg).
@@ -13,7 +13,7 @@ Run such scripts with the toolchain's venv python: `STINGER_TOOLCHAIN=sg ./run_p
 import os
 import sys
 
-TOOLCHAIN = os.environ.get("STINGER_TOOLCHAIN") or "old"  # empty means old, like toolchain.sh
+TOOLCHAIN = os.environ.get("STINGER_TOOLCHAIN") or "sg"  # empty means sg, like toolchain.sh
 if TOOLCHAIN not in ("old", "sg"):
   sys.exit(f"STINGER_TOOLCHAIN must be old or sg (got '{TOOLCHAIN}')")
 

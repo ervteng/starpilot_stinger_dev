@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Toolchain selector, sourced by setup_x86.sh / run_tests.sh / run_py.sh. Python twin: analysis/toolchain.py (keep in sync).
 #
-#   STINGER_TOOLCHAIN=old|sg   old (default): the daily StarPilot layout (code at the repo root), built in $DEV/x86 with $DEV/venv
-#                              sg: the SecretGoodStarPilot layout (code under openpilot/), built in $DEV/x86-sg with $DEV/venv-sg
+#   STINGER_TOOLCHAIN=sg|old   sg (default): the SecretGoodStarPilot/Dom layout (code under openpilot/), built in $DEV/x86-sg with $DEV/venv-sg
+#                              old: the pre-SG StarPilot layout (code at the repo root), built in $DEV/x86 with $DEV/venv. Retired
+#                              2026-10-28 (build dir deleted); setup_x86.sh can rebuild it from archive/stinger-combined-final.
 #   STARPILOT_BUILD            override the build dir (default $DEV/x86 or $DEV/x86-sg)
 #   STARPILOT_DIR              StarPilot clone the worktree is created from (setup_x86.sh) / schema fallback
 #   STARPILOT_REF              ref to check out in a NEW worktree (default per toolchain below)
@@ -10,10 +11,10 @@
 # Sets: DEV TC TC_DEFAULT_REF (ref run_tests.sh uses when none is given) TC_REF (setup_x86.sh: STARPILOT_REF or the default) (old|sg) W (build dir) VENV PY (venv python) LAYOUT (old|sg, auto-detected from the build tree:
 # openpilot/cereal/log.capnp present => sg) TC_REF TC_PYTHONPATH TC_TESTS TC_TARGETS (scons targets, relative to W).
 DEV=${STINGER_DEV_HOME:-$HOME/stinger/starpilot-dev}
-TC=${STINGER_TOOLCHAIN:-old}
+TC=${STINGER_TOOLCHAIN:-sg}
 case "$TC" in
-  old) _tc_dir=x86;    _tc_venv=venv;    TC_DEFAULT_REF=stinger-radar-lfa ;;
-  sg)  _tc_dir=x86-sg; _tc_venv=venv-sg; TC_DEFAULT_REF=upstream/SecretGoodStarPilot ;;
+  old) _tc_dir=x86;    _tc_venv=venv;    TC_DEFAULT_REF=archive/stinger-combined-final ;;
+  sg)  _tc_dir=x86-sg; _tc_venv=venv-sg; TC_DEFAULT_REF=sg-stinger-combined ;;
   *) echo "STINGER_TOOLCHAIN must be old or sg (got '$TC')" >&2; return 2 2>/dev/null || exit 2 ;;
 esac
 TC_REF=${STARPILOT_REF:-$TC_DEFAULT_REF}
@@ -70,4 +71,18 @@ tc_restore_acados_libs() {
       git -C "$W" update-index --skip-worktree "${dir#$W/}/$lib" 2>/dev/null || true
     fi
   done
+}
+
+# Rebuild the given tracked native files for x86 (paths relative to $W). Files SCons doesn't produce keep the repo's
+# copy. Rebuilt files are hidden from git again so later checkouts don't see them as local changes.
+tc_rebuild_natives() {
+  local f missing=() modified
+  (cd "$W" && rm -f "$@")
+  (cd "$W" && PATH="$VENV/bin:$PATH" scons -j"$(nproc)" --minimal "${TC_TARGETS[@]}" > "$DEV/${W##*/}_build.log" 2>&1) \
+    || { tail -20 "$DEV/${W##*/}_build.log" >&2; return 1; }
+  for f in "$@"; do [ -e "$W/$f" ] || missing+=("$f"); done
+  [ ${#missing[@]} -eq 0 ] || git -C "$W" checkout -q HEAD -- "${missing[@]}"
+  modified=$(git -C "$W" ls-files -m)
+  # shellcheck disable=SC2086
+  [ -z "$modified" ] || git -C "$W" update-index --skip-worktree $modified
 }
