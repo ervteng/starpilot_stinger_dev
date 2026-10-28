@@ -12,7 +12,7 @@ Current state and open work: `/home/openpilotstuff/HANDOVER.md`. Read it before 
 - **Push** with `git push -u origin <branch>`. `gh` is logged in as ervteng.
 - **Never force-push, with one exception.** Never rewrite pushed history; use revert commits instead. The exception is SG base updates: when the user asks to move to a newer SG tip, rebase the `sg-*` feature branches onto it and rebuild `sg-stinger-combined` (fresh `--no-ff` merges on the new tip). Then push those branches with `--force-with-lease`. Check with `git range-diff` that every commit is unchanged or that conflict fixes are reported. The user does this often.
 - **Never use bare `git stash`.** Worktrees share the stash. Use WIP commits.
-- **No PRs to FireStar** (`firestar5683/StarPilot`) unless the user asks.
+- **No PRs to FireStar** (`firestar5683/StarPilot`) unless the user asks. PRs target `Dom`.
 - **Never delete remote branches or tags without the user's OK.** To retire a branch, tag it `archive/<name>` first.
 - **The comma token** is in `/home/openpilotstuff/.comma_jwt`. Never read, print or copy it. Only source it inside download scripts:
   `bash -c "set -a; . /home/openpilotstuff/.comma_jwt; set +a; ./comma_dl.py ..."`
@@ -22,7 +22,7 @@ Current state and open work: `/home/openpilotstuff/HANDOVER.md`. Read it before 
 - Gate Stinger-only behaviour to `KIA_STINGER_2022`, not to all cars.
 - Every tuning number must come from measured data (factory ACC logs, replays), with its basis in a comment. Fix acceptance criteria before running an eval, and don't move them afterwards.
 - Reuse existing StarPilot/SG per-car hooks before writing new mechanisms. One mechanism per commit.
-- **SecretGoodStarPilot (SG) base:** branch new SG work from the base `sg-stinger-combined` is built on (currently `05d14fc86e`). Don't move to a newer SG tip unless the user asks.
+- **SecretGoodStarPilot (SG) base:** branch new SG work from the base `sg-stinger-combined` is built on (currently `efe875ffd6`, also FireStar's `Dom`). Don't move to a newer SG tip unless the user asks.
 - **Each SG change gets its own branch off that base,** suitable for an upstream PR. Then merge it with `--no-ff` into `sg-stinger-combined`.
 - **Size validation to the change.** For small edits, run only the affected test files. Run the full serial SG suite once per feature branch, before pushing or merging. Run replays per route in parallel.
 
