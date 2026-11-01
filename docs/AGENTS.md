@@ -19,6 +19,7 @@ Current state and open work: `/home/openpilotstuff/HANDOVER.md`. Read it before 
 - **Panda safety.** Don't touch `opendbc_repo/opendbc/safety` or `panda/` (comma ban risk).
 
 ## How to work
+- **Delegate grunt work to cheaper subagents.** Plan and review in the main session. Hand mechanical jobs (log downloads, clips, re-running existing scripts or replays with known args, rebase/rebuild/push of a branch set) to the cheapest model available (Haiku-class). Hand real implementation and new analysis code to a mid-tier model (Sonnet-class). Brief each subagent with: context already established, exact steps, constraints, a time budget, and what to report back. Review the result before telling the user. Quick reads and checks needed for planning stay inline. Harnesses without subagents: do the work directly.
 - Gate Stinger-only behaviour to `KIA_STINGER_2022`, not to all cars.
 - Every tuning number must come from measured data (factory ACC logs, replays), with its basis in a comment. Fix acceptance criteria before running an eval, and don't move them afterwards.
 - Reuse existing StarPilot/SG per-car hooks before writing new mechanisms. One mechanism per commit.
