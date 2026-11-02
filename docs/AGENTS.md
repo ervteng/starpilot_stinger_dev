@@ -19,17 +19,18 @@ Current state and open work: `/home/openpilotstuff/HANDOVER.md`. Read it before 
 - **Panda safety.** Don't touch `opendbc_repo/opendbc/safety` or `panda/` (comma ban risk).
 
 ## How to work
-- **Delegate grunt work to cheaper subagents.** Plan and review in the main session. Hand mechanical jobs (log downloads, clips, re-running existing scripts or replays with known args, rebase/rebuild/push of a branch set) to the cheapest model available (Haiku-class). Hand real implementation and new analysis code to a mid-tier model (Sonnet-class). Brief each subagent with: context already established, exact steps, constraints, a time budget, and what to report back. Review the result before telling the user. Quick reads and checks needed for planning stay inline. Harnesses without subagents: do the work directly.
+- **Delegate grunt work to cheaper subagents.** Plan and review in the main session. Hand mechanical jobs (log downloads, clips, re-running existing scripts or replays with known args, rebase/rebuild/push of a branch set) to the cheapest model available (Haiku-class or Gemini 3.8 Flash). Hand real implementation and new analysis code to a mid-tier model (Sonnet-class). See [MODELS.md](/home/openpilotstuff/MODELS.md) for T3 model strengths and delegation patterns. Brief each subagent with: context already established, exact steps, constraints, a time budget, and what to report back. Review the result before telling the user. Quick reads and checks needed for planning stay inline. Harnesses without subagents: do the work directly.
 - Gate Stinger-only behaviour to `KIA_STINGER_2022`, not to all cars.
 - Every tuning number must come from measured data (factory ACC logs, replays), with its basis in a comment. Fix acceptance criteria before running an eval, and don't move them afterwards.
 - Reuse existing StarPilot/SG per-car hooks before writing new mechanisms. One mechanism per commit.
-- **Base: FireStar's `Dom`** (SecretGoodStarPilot was merged into it and deleted). Branch new work from the base `sg-stinger-combined` is built on (currently `fee87a4576`). Don't move to a newer Dom tip unless the user asks.
+- **Base: FireStar's `Dom`** (SecretGoodStarPilot was merged into it and deleted). Branch new work from the base `sg-stinger-combined` is built on (currently `d2680ea3db`). Don't move to a newer Dom tip unless the user asks.
 - **Each change gets its own `sg-*` branch off that base,** suitable for an upstream PR. Then merge it with `--no-ff` into `sg-stinger-combined`.
 - **Size validation to the change.** For small edits, run only the affected test files. Run the full serial SG suite once per feature branch, before pushing or merging. Run replays per route in parallel.
 
 ## Layout (`/home/openpilotstuff`)
 | Path | What |
 |---|---|
+| `MODELS.md` | model strengths and T3 delegation matrix |
 | `starpilot/` | clone of github.com/ervteng/StarPilot (branch `StarPilot`) |
 | `wt/<branch>/` | git worktrees of StarPilot, one per active branch |
 | `starpilot_stinger_dev/` | clone of github.com/ervteng/starpilot_stinger_dev (public): analysis, downloaders, test runner, route catalog, docs |
