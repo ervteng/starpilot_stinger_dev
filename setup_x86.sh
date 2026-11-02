@@ -107,7 +107,7 @@ if file "$W/msgq_repo/msgq/ipc_pyx.so" 2>/dev/null | grep -q x86-64 && file "$TC
   log "x86 builds already present"
 else
   log "building native modules for x86 (a few minutes)"
-  (cd "$W" && PATH="$VENV/bin:$PATH" scons -j"$(nproc)" --minimal "${TC_TARGETS[@]}" > "$DEV/${W##*/}_build.log" 2>&1) \
+  (cd "$W" && PATH="$(tc_cxx_wrapper)$VENV/bin:$PATH" scons -j"$(nproc)" --minimal "${TC_TARGETS[@]}" > "$DEV/${W##*/}_build.log" 2>&1) \
     || { tail -20 "$DEV/${W##*/}_build.log"; exit 1; }
 fi
 # Ubuntu 26.04's glibc refuses libraries that request an executable stack (the old tree's bundled libblasfeo does).

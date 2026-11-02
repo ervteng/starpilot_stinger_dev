@@ -33,8 +33,8 @@ if [ "$LAYOUT" = sg ]; then
   TC_TESTS=(openpilot/selfdrive/controls/tests opendbc_repo/opendbc/car/hyundai/tests)
   TC_TARGETS=(
     openpilot/common/libparams_c.so
-    msgq_repo/msgq/ipc_pyx.so
-    msgq_repo/msgq/visionipc/visionipc_pyx.so
+    msgq_repo/msgq/_ipc.so
+    msgq_repo/msgq/visionipc/_visionipc.so
     opendbc_repo/opendbc/can/_raw_value.so
     openpilot/selfdrive/controls/lib/longitudinal_mpc_lib/c_generated_code/acados_ocp_solver_pyx.so
   )
@@ -73,12 +73,26 @@ tc_restore_acados_libs() {
   done
 }
 
+# SG's SConstruct builds with -Werror. With g++ 15 and the uv Python 3.12 headers, the nanobind-based msgq targets fail
+# on a "_POSIX_C_SOURCE / _XOPEN_SOURCE redefined" macro warning (glibc vs pyconfig.h). It is not a code error, so
+# build with g++/c++ wrappers that add -Wno-error instead of editing SConstruct. Prints the wrapper dir (empty for old).
+tc_cxx_wrapper() {
+  [ "$TC" = sg ] || return 0
+  local d=$DEV/cxx-wrap n
+  mkdir -p "$d"
+  for n in g++ c++; do
+    printf '#!/bin/sh\nexec /usr/bin/%s "$@" -Wno-error\n' "$n" > "$d/$n"
+    chmod +x "$d/$n"
+  done
+  echo "$d:"
+}
+
 # Rebuild the given tracked native files for x86 (paths relative to $W). Files SCons doesn't produce keep the repo's
 # copy. Rebuilt files are hidden from git again so later checkouts don't see them as local changes.
 tc_rebuild_natives() {
   local f missing=() modified
   (cd "$W" && rm -f "$@")
-  (cd "$W" && PATH="$VENV/bin:$PATH" scons -j"$(nproc)" --minimal "${TC_TARGETS[@]}" > "$DEV/${W##*/}_build.log" 2>&1) \
+  (cd "$W" && PATH="$(tc_cxx_wrapper)$VENV/bin:$PATH" scons -j"$(nproc)" --minimal "${TC_TARGETS[@]}" > "$DEV/${W##*/}_build.log" 2>&1) \
     || { tail -20 "$DEV/${W##*/}_build.log" >&2; return 1; }
   for f in "$@"; do [ -e "$W/$f" ] || missing+=("$f"); done
   [ ${#missing[@]} -eq 0 ] || git -C "$W" checkout -q HEAD -- "${missing[@]}"
