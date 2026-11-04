@@ -395,3 +395,9 @@ Create a new branch/worktree from `upstream/SecretGoodStarPilot` (`202a52c353`) 
 - Tests (default paths, `-n 0`): 7282 passed, 3 skipped, 1 failed. The failure (`test_ioniq6_handoff::test_stock_ev_optional_msla_does_not_invalidate_lateral_inputs`, `DawSource.update` gets a bare `(ts, [])` tuple) also fails on plain upstream Dom: upstream bug, not ours.
 - DAW on the Stinger: classic DAW rewrites 0x53E as a 6-byte LKAS12. On the Stinger 0x53E is 8 bytes (rlog `00000006--c34ec9b175--69`: bus 2, forwarded to bus 0). Python and panda only act on 6-byte frames and forwarding of 0x53E is unchanged, so it is a no-op on the Stinger.
 - Gotcha: `run_tests.sh <ref> -n 0` replaces the default test paths and collects the whole tree (fails on missing `raylib_nb`, which the x86 toolchain doesn't build). Pass the paths explicitly: `openpilot/selfdrive/controls/tests opendbc_repo/opendbc/car/hyundai/tests -n 0`.
+
+## 2026-11-03: base move to Dom `dd4214f8f5`
+- 71 upstream commits on top of `10d170e799`: StarPort guided setup and H.265, Auto Learn study continuation, Conditional Experimental on the upstream planner (`4d804768ab`), Force Stop temp hold and dashboard signal, CEM cross-traffic hold, new panda firmware. Fork `Dom` fast-forwarded to `89af8a6569` (one more Subaru-only commit).
+- `hkg-can-nav-speed-limit` conflicted in `carstate.py` `__init__` with upstream's new `dashboard_stop_sign` line; both kept, in both commits. The other branches rebased unchanged. `sg-stinger-combined` rebuilt as `f168a33f23`; the delta vs Dom differs only in that context.
+- Tests: 7,427 passed, 3 skipped, 1 failed (same upstream Ioniq 6 `DawSource.update` bug, also fails on plain `dd4214f8f5`).
+- Rebases in a delegate brief need `GIT_COMMITTER_NAME`/`GIT_COMMITTER_EMAIL` set too, or the committer becomes `root`.
