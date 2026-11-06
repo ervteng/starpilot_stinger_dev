@@ -406,3 +406,9 @@ Create a new branch/worktree from `upstream/SecretGoodStarPilot` (`202a52c353`) 
 - 88 upstream commits on top of `dd4214f8f5`, including `29bf269ccc` (arm classic HKG lateral after accelerator override clears) and `9eab5400a4`, which touched `interface.py`, `daw.py` or the Ioniq 6 test and cleared the earlier `DawSource.update` test failure. None touched the files our branches change.
 - All rebases clean, `git range-diff` all `=`. `sg-stinger-combined` rebuilt as `298aa669a1`; delta vs Dom byte-identical to `f168a33f23`.
 - Tests: 7,427 passed, 3 skipped, 0 failed. `sg-stinger-model-lead-low-speed` (`a51e136af2`, local only): 7 passed.
+
+## 2026-11-06: base move to Dom `e959f52e25`
+- 29 upstream commits on top of `2b83873371`: Auto Learn/FLM parked and offroad tuning, Jetlink v0.9.0, AOL stock lateral intent during inhibited long recovery (`52852af602`), blind-spot alert freshness (`3160182986`), Toyota/GM/Tesla fixes. None touched the files our branches change.
+- All rebases clean, `git range-diff` all `=`. `sg-stinger-combined` rebuilt as `1bc7eccc5e`; delta vs Dom byte-identical to `298aa669a1`.
+- Tests: 7,427 passed, 3 skipped, 0 failed. `sg-stinger-model-lead-low-speed` (`24091a6643`, local only): 7 passed.
+- Not yet drive-tested on the build: `29bf269ccc` (classic HKG lateral re-arm after accelerator override) and the AEB light fix.
