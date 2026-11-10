@@ -412,3 +412,8 @@ Create a new branch/worktree from `upstream/SecretGoodStarPilot` (`202a52c353`) 
 - All rebases clean, `git range-diff` all `=`. `sg-stinger-combined` rebuilt as `1bc7eccc5e`; delta vs Dom byte-identical to `298aa669a1`.
 - Tests: 7,427 passed, 3 skipped, 0 failed. `sg-stinger-model-lead-low-speed` (`24091a6643`, local only): 7 passed.
 - Not yet drive-tested on the build: `29bf269ccc` (classic HKG lateral re-arm after accelerator override) and the AEB light fix.
+
+## 2026-11-09: base move to Dom `f43de18e00`
+- 106 upstream commits on top of `e959f52e25`. The Stinger-relevant ones are classic HKG AOL and advisory fixes (`1272c27b8d`, `f711833ba1`, `c782605ebc`, `7056dcb1fa`, `c22785a22f`, `495fa11cf6`, `4f9a680935`), which touch the panda safety code (`opendbc_repo/opendbc/safety`, upstream's change) and `carcontroller.py`; and `1b797b7359` (keep Experimental preference during stock ACC fallback). Other new work: Sentry alerts, StarPort experimental fixes, Galaxy and PiP, Ioniq 6 on external Panda (`3edb88f68c`).
+- Overlaps with our branches (`carstate.py` import/hunk, `longitudinal_planner.py` import): additive, merged cleanly. `git range-diff` all `=`. `sg-stinger-combined` rebuilt as `7a096ea005`; delta vs Dom byte-identical to `1bc7eccc5e`.
+- Tests: 7,502 passed, 3 skipped, 9 failed. All 9 are upstream's `test_ioniq6_preflight_retry.py` (`NameError: _ecan_bus`), same on plain Dom. `sg-stinger-model-lead-low-speed` (`8369fcd82e`, local): 7 passed.
