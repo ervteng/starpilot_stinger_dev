@@ -417,3 +417,9 @@ Create a new branch/worktree from `upstream/SecretGoodStarPilot` (`202a52c353`) 
 - 106 upstream commits on top of `e959f52e25`. The Stinger-relevant ones are classic HKG AOL and advisory fixes (`1272c27b8d`, `f711833ba1`, `c782605ebc`, `7056dcb1fa`, `c22785a22f`, `495fa11cf6`, `4f9a680935`), which touch the panda safety code (`opendbc_repo/opendbc/safety`, upstream's change) and `carcontroller.py`; and `1b797b7359` (keep Experimental preference during stock ACC fallback). Other new work: Sentry alerts, StarPort experimental fixes, Galaxy and PiP, Ioniq 6 on external Panda (`3edb88f68c`).
 - Overlaps with our branches (`carstate.py` import/hunk, `longitudinal_planner.py` import): additive, merged cleanly. `git range-diff` all `=`. `sg-stinger-combined` rebuilt as `7a096ea005`; delta vs Dom byte-identical to `1bc7eccc5e`.
 - Tests: 7,502 passed, 3 skipped, 9 failed. All 9 are upstream's `test_ioniq6_preflight_retry.py` (`NameError: _ecan_bus`), same on plain Dom. `sg-stinger-model-lead-low-speed` (`8369fcd82e`, local): 7 passed.
+
+## 2026-11-22: upstream renames Dom to testing (StarPilot 7.0)
+- Upstream renamed `Dom` to `testing` and froze `Dom` at `2c9a556f58`, whose last commit is the branch-migration marker (`scripts/branch-migration.json`). `launch_chffrplus.sh` runs the migration on boot, so a device that tracks `Dom` moves to `testing` itself. `stable` is the 7.0 release line (`008b0cbcf1`).
+- Fork mirrors pushed: `Dom`, `testing` (`645cca2086`), `stable` (`008b0cbcf1`).
+- Rules updated (AGENTS.md, both copies): base and PR target are now `testing`. Our build is still on old Dom `81a9e19e33`; the move is not done.
+- Checked the four pushed branches against Dom `36b211de7b` (2026-11-17): none is superseded upstream.

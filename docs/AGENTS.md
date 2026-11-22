@@ -10,9 +10,9 @@ Current state and open work: `/home/openpilotstuff/HANDOVER.md`. Read it before 
   `GIT_AUTHOR_NAME=ervteng GIT_AUTHOR_EMAIL=5085265+ervteng@users.noreply.github.com GIT_COMMITTER_NAME=<you> GIT_COMMITTER_EMAIL=<you> git commit ...`
   End each message with a `Co-Authored-By:` trailer for your model.
 - **Push** with `git push -u origin <branch>`. `gh` is logged in as ervteng.
-- **Never force-push, with one exception.** Never rewrite pushed history; use revert commits instead. The exception is base updates: when the user asks to move to a newer Dom tip, rebase the `sg-*` feature branches onto it and rebuild `sg-stinger-combined` (fresh `--no-ff` merges on the new tip). Then push those branches with `--force-with-lease`. Check with `git range-diff` that every commit is unchanged or that conflict fixes are reported. The user does this often.
+- **Never force-push, with one exception.** Never rewrite pushed history; use revert commits instead. The exception is base updates: when the user asks to move to a newer base tip (`testing`), rebase the `sg-*` feature branches onto it and rebuild `sg-stinger-combined` (fresh `--no-ff` merges on the new tip). Then push those branches with `--force-with-lease`. Check with `git range-diff` that every commit is unchanged or that conflict fixes are reported. The user does this often.
 - **Never use bare `git stash`.** Worktrees share the stash. Use WIP commits.
-- **No PRs to FireStar** (`firestar5683/StarPilot`) unless the user asks. PRs target `Dom`.
+- **No PRs to FireStar** (`firestar5683/StarPilot`) unless the user asks. PRs target `testing`.
 - **Never delete remote branches or tags without the user's OK.** To retire a branch, tag it `archive/<name>` first.
 - **The comma token** is in `/home/openpilotstuff/.comma_jwt`. Never read, print or copy it. Only source it inside download scripts:
   `bash -c "set -a; . /home/openpilotstuff/.comma_jwt; set +a; ./comma_dl.py ..."`
@@ -23,7 +23,7 @@ Current state and open work: `/home/openpilotstuff/HANDOVER.md`. Read it before 
 - Gate Stinger-only behaviour to `KIA_STINGER_2022`, not to all cars.
 - Every tuning number must come from measured data (factory ACC logs, replays), with its basis in a comment. Fix acceptance criteria before running an eval, and don't move them afterwards.
 - Reuse existing StarPilot/SG per-car hooks before writing new mechanisms. One mechanism per commit.
-- **Base: FireStar's `Dom`** (SecretGoodStarPilot was merged into it and deleted). Branch new work from the base `sg-stinger-combined` is built on (currently `f43de18e00`). Don't move to a newer Dom tip unless the user asks.
+- **Base: FireStar's `testing`.** Upstream renamed `Dom` to `testing` on 2026-11-17 and froze `Dom` (its last commit is the branch-migration marker). `stable` is the 7.0 release line: mirrored on the fork, not our base. Our base is currently `81a9e19e33` (old Dom) and moves to `testing` on the next base update. Don't move to a newer tip unless the user asks. Fork mirrors: `Dom` (frozen), `testing`, `stable`.
 - **Each change gets its own `sg-*` branch off that base,** suitable for an upstream PR. Then merge it with `--no-ff` into `sg-stinger-combined`.
 - **Size validation to the change.** For small edits, run only the affected test files. Run the full serial SG suite once per feature branch, before pushing or merging. Run replays per route in parallel.
 
@@ -37,7 +37,7 @@ Current state and open work: `/home/openpilotstuff/HANDOVER.md`. Read it before 
 | `starpilot-dev/` | `$STINGER_DEV_HOME`: `venv-sg/` + `x86-sg/` (the toolchain; the old `venv/` + `x86/` were deleted 2026-10-28), `logs/`, `video/` |
 
 - **Env vars:** pass `STINGER_DEV_HOME=/home/openpilotstuff/starpilot-dev STARPILOT_DIR=/home/openpilotstuff/starpilot` explicitly. Agent shells may not source `~/.bashrc`, and the scripts would then fall back to `~/stinger`.
-- **Toolchain:** SG/Dom only (`STINGER_TOOLCHAIN` defaults to `sg`; `old` is retired). Run Python tools with `./run_py.sh analysis/x.py`, and tests with `./run_tests.sh <ref> <paths>`. Tests need `-n 0` (serial). `run_tests.sh` rebuilds the x86 natives itself when a ref changes a tracked `.so`/`.a`. See the dev repo README, "Toolchains".
+- **Toolchain:** SG only (`STINGER_TOOLCHAIN` defaults to `sg`; `old` is retired). Run Python tools with `./run_py.sh analysis/x.py`, and tests with `./run_tests.sh <ref> <paths>`. Tests need `-n 0` (serial). `run_tests.sh` rebuilds the x86 natives itself when a ref changes a tracked `.so`/`.a`. See the dev repo README, "Toolchains".
 - **Downloads:** `comma_dl.py ROUTE SEGS --type rlog|qlog|qcamera|fcamera`. Dongle `59fa1d41318b87d3`. Catalog: `starpilot_stinger_dev/routes/ROUTES.md`.
 - **New worktree:** after `git worktree add`, link the rules into its root so Antigravity finds them: `ln -s ../../AGENTS.md wt/<name>/AGENTS.md`. Git already ignores it through `.git/info/exclude`.
 - **glibc gotcha:** a rebuilt `x86*/third_party/acados/x86_64/lib/libblasfeo.so` needs `patchelf --clear-execstack`.
