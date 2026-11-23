@@ -423,3 +423,10 @@ Create a new branch/worktree from `upstream/SecretGoodStarPilot` (`202a52c353`) 
 - Fork mirrors pushed: `Dom`, `testing` (`645cca2086`), `stable` (`008b0cbcf1`).
 - Rules updated (AGENTS.md, both copies): base and PR target are now `testing`. Our build is still on old Dom `81a9e19e33`; the move is not done.
 - Checked the four pushed branches against Dom `36b211de7b` (2026-11-17): none is superseded upstream.
+
+## 2026-11-22: rebase onto upstream testing `645cca2086`
+- `sg-stinger-combined` `5956b16fe0` = `testing` plus `hkg-can-nav-speed-limit` and `sg-stinger-hide-aeb-disabled-light`. Conflicts: Navi_HU vs upstream `drive_mode` (both kept), AEB vs upstream's new `create_acc_commands` signature (upstream signature kept, `fca_aeb_status` added). Commit comments shortened on both sides.
+- ISG branch rebased, left out of the build (user's test).
+- Lead branch retired: upstream `e4822ac42c` covers the Stinger. Tag `archive/sg-kia-stinger-2022-can-lead-display`.
+- AEB branch: the upstream `test_g90_lead` expects `FCA_Status 1` for the Stinger, which the AEB change deliberately breaks. Commit `d93d5ed770` changes that expectation for the Stinger only.
+- Tests: 10,327 passed, 3 skipped, 6 failed, 1 error. Failures match plain `testing` (4 publish-timing, 2 ev6), and the error is the upstream `raylib_nb` import.
