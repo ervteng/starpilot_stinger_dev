@@ -23,7 +23,7 @@ Current state and open work: `/home/openpilotstuff/HANDOVER.md`. Read it before 
 - Gate Stinger-only behaviour to `KIA_STINGER_2022`, not to all cars.
 - Every tuning number must come from measured data (factory ACC logs, replays), with its basis in a comment. Fix acceptance criteria before running an eval, and don't move them afterwards.
 - Reuse existing StarPilot/SG per-car hooks before writing new mechanisms. One mechanism per commit.
-- **Base: FireStar's `testing`.** Upstream renamed `Dom` to `testing` on 2026-11-17 and froze `Dom` (its last commit is the branch-migration marker). `stable` is the 7.0 release line: mirrored on the fork, not our base. Our base is currently `645cca2086` (upstream `testing`, rebased 2026-11-22). Don't move to a newer tip unless the user asks. Fork mirrors: `Dom` (frozen), `testing`, `stable`.
+- **Base: FireStar's `testing`.** Upstream renamed `Dom` to `testing` on 2026-11-17 and froze `Dom` (its last commit is the branch-migration marker). `stable` is the 7.0 release line: mirrored on the fork, not our base. Our base is currently `14babc867a` (upstream `testing`, rebased 2026-11-24). Don't move to a newer tip unless the user asks. Fork mirrors: `Dom` (frozen), `testing`, `stable`.
 - **Each change gets its own `sg-*` branch off that base,** suitable for an upstream PR. Then merge it with `--no-ff` into `sg-stinger-combined`.
 - **Size validation to the change.** For small edits, run only the affected test files. Run the full serial SG suite once per feature branch, before pushing or merging. Run replays per route in parallel.
 
